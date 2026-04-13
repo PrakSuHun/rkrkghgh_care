@@ -2,54 +2,71 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LayoutDashboard, Users, UserCheck, UserPlus, Tag, LogOut } from "lucide-react";
 
 const tabs = [
-  { href: "/", label: "대시보드" },
-  { href: "/seniors", label: "어르신" },
-  { href: "/workers", label: "요양보호사" },
-  { href: "/assignments", label: "담당배정" },
-  { href: "/tag-monitor", label: "태그" },
+  { href: "/", label: "대시보드", icon: LayoutDashboard },
+  { href: "/seniors", label: "어르신", icon: Users },
+  { href: "/workers", label: "요양사", icon: UserCheck },
+  { href: "/assignments", label: "배정", icon: UserPlus },
+  { href: "/tag-monitor", label: "태그", icon: Tag },
 ];
 
 export default function TopNav() {
   const pathname = usePathname();
+  const currentTab = tabs.find((t) => t.href === pathname || (t.href !== "/" && pathname.startsWith(t.href)));
+
+  async function logout() {
+    await fetch("/api/login", { method: "DELETE" });
+    window.location.href = "/login";
+  }
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center h-14">
-          <Link href="/" className="text-xl font-bold text-indigo-600 mr-8">
-            CareLink
-          </Link>
-          <div className="flex space-x-1 flex-1">
+    <>
+      {/* 상단 헤더 (모바일/데스크탑 공통, 로그인 페이지에서는 숨김) */}
+      {pathname !== "/login" && (
+        <header className="bg-white border-b sticky top-0 z-40">
+          <div className="flex items-center justify-between px-4 h-14 max-w-3xl mx-auto">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-lg font-bold text-indigo-600 truncate">가가호호 케어</span>
+              {currentTab && (
+                <span className="text-sm text-gray-500 truncate">· {currentTab.label}</span>
+              )}
+            </div>
+            <button
+              onClick={logout}
+              className="p-2 text-gray-500 active:text-red-600"
+              aria-label="로그아웃"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
+        </header>
+      )}
+
+      {/* 하단 탭바 (모든 화면 크기에서 사용) */}
+      {pathname !== "/login" && (
+        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-40 pb-safe">
+          <div className="grid grid-cols-5 max-w-md mx-auto">
             {tabs.map((tab) => {
-              const active = pathname === tab.href;
+              const Icon = tab.icon;
+              const active = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
               return (
                 <Link
                   key={tab.href}
                   href={tab.href}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-                    active
-                      ? "bg-indigo-50 text-indigo-700"
-                      : "text-gray-600 hover:bg-gray-100"
+                  className={`flex flex-col items-center justify-center py-2 gap-0.5 ${
+                    active ? "text-indigo-600" : "text-gray-500"
                   }`}
                 >
-                  {tab.label}
+                  <Icon className="w-5 h-5" />
+                  <span className="text-[11px] font-medium">{tab.label}</span>
                 </Link>
               );
             })}
           </div>
-          <button
-            onClick={async () => {
-              await fetch("/api/login", { method: "DELETE" });
-              window.location.href = "/login";
-            }}
-            className="px-3 py-2 text-sm text-gray-600 hover:text-red-600"
-          >
-            로그아웃
-          </button>
-        </div>
-      </div>
-    </nav>
+        </nav>
+      )}
+    </>
   );
 }

@@ -64,7 +64,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div data-login-page className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <Suspense fallback={<div className="w-full max-w-sm bg-white rounded-xl shadow p-6">로딩 중...</div>}>
         <LoginForm />
       </Suspense>

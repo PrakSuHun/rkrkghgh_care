@@ -1,0 +1,11 @@
+{
+  "name": "가가호호 케어",
+  "short_name": "가가호호",
+  "description": "재가장기요양 관리 시스템",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f9fafb",
+  "theme_color": "#4f46e5",
+  "lang": "ko"
+}
