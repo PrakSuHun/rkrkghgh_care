@@ -1,5 +1,7 @@
+const isVercel = !!process.env.VERCEL;
+
 const config = {
-  distDir: "/tmp/care-next",
+  ...(isVercel ? {} : { distDir: "/tmp/care-next" }),
   experimental: {
     turbopackFileSystemCacheForDev: false,
   },
