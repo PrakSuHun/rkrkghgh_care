@@ -25,6 +25,10 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const acquireWakeLock = async () => {
     try {
@@ -51,10 +55,14 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
 
   const cleanup = () => {
     if (timerRef.current) clearInterval(timerRef.current);
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
     if (mediaRecorderRef.current?.state !== "inactive") {
       mediaRecorderRef.current?.stop();
     }
     mediaRecorderRef.current?.stream.getTracks().forEach((t) => t.stop());
+    try { audioCtxRef.current?.close(); } catch {}
+    audioCtxRef.current = null;
+    analyserRef.current = null;
     releaseWakeLock();
     setRecording(false);
     setPaused(false);
@@ -63,6 +71,40 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
     setAudioBlob(null);
     setProcessing(false);
     chunksRef.current = [];
+  };
+
+  const drawWaveform = () => {
+    const analyser = analyserRef.current;
+    const canvas = canvasRef.current;
+    if (!analyser || !canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      ctx.scale(dpr, dpr);
+    }
+    const bufferLength = analyser.frequencyBinCount;
+    const data = new Uint8Array(bufferLength);
+    analyser.getByteFrequencyData(data);
+    ctx.clearRect(0, 0, w, h);
+    const bars = 32;
+    const step = Math.floor(bufferLength / bars);
+    const barWidth = w / bars;
+    for (let i = 0; i < bars; i++) {
+      let sum = 0;
+      for (let j = 0; j < step; j++) sum += data[i * step + j] ?? 0;
+      const avg = sum / step;
+      const barHeight = Math.max(4, (avg / 255) * h * 0.9);
+      ctx.fillStyle = paused ? "#9ca3af" : "#ef4444";
+      const x = i * barWidth + barWidth * 0.15;
+      const y = (h - barHeight) / 2;
+      ctx.fillRect(x, y, barWidth * 0.7, barHeight);
+    }
+    rafRef.current = requestAnimationFrame(drawWaveform);
   };
 
   const pickMimeType = (): string => {
@@ -118,6 +160,20 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
         const err = (e as any).error;
         alert("녹음 중 오류: " + (err?.message ?? err?.name ?? "알 수 없음"));
       };
+
+      // 파형 분석기 준비
+      try {
+        const AC: typeof AudioContext =
+          window.AudioContext || (window as any).webkitAudioContext;
+        const audioCtx = new AC();
+        const source = audioCtx.createMediaStreamSource(stream);
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        audioCtxRef.current = audioCtx;
+        analyserRef.current = analyser;
+        requestAnimationFrame(drawWaveform);
+      } catch {}
 
       mediaRecorder.start();
       setRecording(true);
@@ -216,10 +272,11 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
 
           {recording && (
             <>
-              <div className="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                <div className="w-10 h-10 bg-white rounded" />
-              </div>
-              <p className="mt-4 text-3xl font-mono font-bold">{formatTime(elapsed)}</p>
+              <canvas
+                ref={canvasRef}
+                className="w-full h-24 bg-gray-50 rounded-lg"
+              />
+              <p className="mt-3 text-3xl font-mono font-bold">{formatTime(elapsed)}</p>
               <p className="text-sm text-gray-500">{paused ? "일시정지됨" : "녹음 중..."}</p>
               <div className="flex gap-3 mt-4">
                 <button
