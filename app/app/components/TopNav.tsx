@@ -5,9 +5,10 @@ import { usePathname } from "next/navigation";
 
 const tabs = [
   { href: "/", label: "대시보드" },
-  { href: "/seniors", label: "어르신 관리" },
+  { href: "/seniors", label: "어르신" },
   { href: "/workers", label: "요양보호사" },
-  { href: "/tag-monitor", label: "태그 모니터링" },
+  { href: "/assignments", label: "담당배정" },
+  { href: "/tag-monitor", label: "태그" },
 ];
 
 export default function TopNav() {

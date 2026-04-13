@@ -68,9 +68,36 @@ export async function POST(req: Request) {
   if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
   const journalId = inserted.id;
 
+  // 이름 교정용 컨텍스트
+  const [{ data: allSeniors }, { data: allCaregivers }] = await Promise.all([
+    supabase.from("seniors").select("name").eq("status", "active"),
+    supabase.from("caregivers").select("name").eq("status", "active"),
+  ]);
+  const { data: assigned } = await supabase
+    .from("caregiver_assignments")
+    .select("caregivers(name)")
+    .eq("senior_id", seniorId)
+    .eq("status", "active");
+  const { data: thisSenior } = await supabase
+    .from("seniors")
+    .select("name")
+    .eq("id", seniorId)
+    .single();
+  const knownNames = [
+    ...(allSeniors ?? []).map((r: any) => r.name),
+    ...(allCaregivers ?? []).map((r: any) => r.name),
+  ];
+  const preferredNames = [
+    ...(thisSenior ? [thisSenior.name] : []),
+    ...(assigned ?? []).map((a: any) => a.caregivers?.name).filter(Boolean),
+  ];
+
   after(async () => {
     try {
-      const { transcript, summary } = await transcribeAndSummarize(buffer, mimeType, "journal");
+      const { transcript, summary } = await transcribeAndSummarize(buffer, mimeType, "journal", {
+        knownNames,
+        preferredNames,
+      });
       await supabase
         .from("journals")
         .update({ transcript, summary, status: "done" })

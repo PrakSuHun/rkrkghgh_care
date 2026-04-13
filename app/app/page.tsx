@@ -1,149 +1,113 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Users, UserCheck, FileText, MessageSquare } from "lucide-react";
-
-type Senior = { id: number; name: string };
-type Worker = { id: number; name: string };
-type Journal = {
-  id: number;
-  senior_id?: number;
-  worker_id?: number;
-  senior_name?: string;
-  worker_name?: string;
-  summary: string | null;
-  status: string;
-  created_at: number;
-};
+import { Mic, MessageSquare, Search, X } from "lucide-react";
+import QuickRecordCard from "./components/QuickRecordCard";
+import SeniorSummaryCard from "./components/SeniorSummaryCard";
 
 export default function DashboardPage() {
-  const [seniors, setSeniors] = useState<Senior[]>([]);
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [recentJournals, setRecentJournals] = useState<Journal[]>([]);
-  const [recentCounseling, setRecentCounseling] = useState<Journal[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [openSenior, setOpenSenior] = useState(false);
+  const [openWorker, setOpenWorker] = useState(false);
+
+  const [seniors, setSeniors] = useState<any[]>([]);
+  const [q, setQ] = useState("");
+  const [picked, setPicked] = useState<any | null>(null);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [sRes, wRes, jRes, cRes] = await Promise.all([
-          fetch("/api/seniors"),
-          fetch("/api/workers"),
-          fetch("/api/journals?limit=5"),
-          fetch("/api/counseling?limit=5"),
-        ]);
-        if (sRes.ok) setSeniors((await sRes.json()).recipients ?? []);
-        if (wRes.ok) setWorkers((await wRes.json()).caregivers ?? []);
-        if (jRes.ok) setRecentJournals((await jRes.json()).journals ?? []);
-        if (cRes.ok) setRecentCounseling((await cRes.json()).logs ?? []);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+    fetch("/api/seniors").then((r) => r.json()).then((j) => setSeniors(j.data ?? []));
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600" />
-      </div>
-    );
-  }
+  const filtered = q ? seniors.filter((s) => s.name.includes(q)).slice(0, 8) : [];
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8">
+    <div className="p-6 max-w-3xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">대시보드</h1>
         <p className="text-sm text-gray-500 mt-1">재가센터 행정 관리 시스템</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Link href="/seniors">
-          <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">활성 어르신</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{seniors.length}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-blue-50 text-blue-600">
-                <Users className="w-6 h-6" />
-              </div>
-            </div>
-          </div>
-        </Link>
-
-        <Link href="/workers">
-          <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">활성 요양보호사</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{workers.length}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-green-50 text-green-600">
-                <UserCheck className="w-6 h-6" />
-              </div>
-            </div>
-          </div>
-        </Link>
+      {/* 빠른 녹음 */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => setOpenSenior(true)}
+          className="bg-indigo-600 active:bg-indigo-800 text-white rounded-2xl p-5 shadow-sm text-left"
+        >
+          <Mic className="w-6 h-6 mb-2" />
+          <p className="text-base font-semibold">대상자 상태일지</p>
+          <p className="text-xs opacity-80 mt-0.5">어르신 돌봄 녹음</p>
+        </button>
+        <button
+          onClick={() => setOpenWorker(true)}
+          className="bg-emerald-600 active:bg-emerald-800 text-white rounded-2xl p-5 shadow-sm text-left"
+        >
+          <MessageSquare className="w-6 h-6 mb-2" />
+          <p className="text-base font-semibold">요양사 상담일지</p>
+          <p className="text-xs opacity-80 mt-0.5">요양보호사 상담 녹음</p>
+        </button>
       </div>
 
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <FileText className="w-5 h-5 text-indigo-600" />
-          <h2 className="text-lg font-semibold text-gray-800">최근 어르신 일지</h2>
+      {/* 어르신 검색 (10영역 복사용) */}
+      <div className="bg-white border rounded-2xl p-4 space-y-3">
+        <div className="relative">
+          <Search className="w-5 h-5 absolute left-3 top-3.5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="어르신 이름 검색"
+            value={q}
+            onChange={(e) => { setQ(e.target.value); setPicked(null); }}
+            className="w-full pl-10 pr-9 py-3 border rounded-xl text-base"
+          />
+          {q && (
+            <button onClick={() => { setQ(""); setPicked(null); }} className="absolute right-2 top-2.5 p-1">
+              <X className="w-5 h-5 text-gray-400" />
+            </button>
+          )}
         </div>
-        {recentJournals.length === 0 ? (
-          <p className="text-sm text-gray-400 py-6 text-center bg-white border border-gray-200 rounded-xl">
-            아직 작성된 일지가 없습니다.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {recentJournals.map((j) => (
-              <Link key={j.id} href={`/seniors/${j.senior_id}`}>
-                <div className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition cursor-pointer">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="font-medium text-gray-900">{j.senior_name}</p>
-                    <span className="text-xs text-gray-500">{new Date(j.created_at).toLocaleString("ko-KR")}</span>
-                  </div>
-                  <p className="text-sm text-gray-600 line-clamp-2">
-                    {j.status === "processing" ? "⏳ AI 변환 중..." : j.summary ?? ""}
-                  </p>
-                </div>
-              </Link>
-            ))}
+
+        {q && !picked && (
+          <div className="space-y-1">
+            {filtered.length === 0 ? (
+              <p className="text-sm text-gray-400 py-3 text-center">검색 결과 없음</p>
+            ) : (
+              filtered.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => { setPicked(s); }}
+                  className="w-full text-left px-3 py-3 rounded-lg active:bg-indigo-100 border"
+                >
+                  <p className="font-medium">{s.name}</p>
+                  <p className="text-xs text-gray-500">{s.grade ?? ""} · {s.long_term_care_id ?? ""}</p>
+                </button>
+              ))
+            )}
           </div>
         )}
       </div>
 
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <MessageSquare className="w-5 h-5 text-emerald-600" />
-          <h2 className="text-lg font-semibold text-gray-800">최근 상담 일지</h2>
-        </div>
-        {recentCounseling.length === 0 ? (
-          <p className="text-sm text-gray-400 py-6 text-center bg-white border border-gray-200 rounded-xl">
-            아직 작성된 상담일지가 없습니다.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {recentCounseling.map((c) => (
-              <Link key={c.id} href={`/workers/${c.worker_id}`}>
-                <div className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition cursor-pointer">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="font-medium text-gray-900">{c.worker_name}</p>
-                    <span className="text-xs text-gray-500">{new Date(c.created_at).toLocaleString("ko-KR")}</span>
-                  </div>
-                  <p className="text-sm text-gray-600 line-clamp-2">
-                    {c.status === "processing" ? "⏳ AI 변환 중..." : c.summary ?? ""}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
+      {picked && <SeniorSummaryCard senior={picked} onUpdated={(u) => setPicked(u)} />}
+
+      <QuickRecordCard
+        open={openSenior}
+        onClose={() => setOpenSenior(false)}
+        title="대상자 상태일지"
+        listUrl="/api/seniors"
+        listField="recipients"
+        uploadUrl="/api/journals"
+        uploadField="senior_id"
+        accent="indigo"
+        onComplete={() => {}}
+      />
+      <QuickRecordCard
+        open={openWorker}
+        onClose={() => setOpenWorker(false)}
+        title="요양사 상담일지"
+        listUrl="/api/workers"
+        listField="caregivers"
+        uploadUrl="/api/counseling"
+        uploadField="worker_id"
+        accent="emerald"
+        onComplete={() => {}}
+      />
     </div>
   );
 }

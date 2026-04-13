@@ -63,9 +63,35 @@ export async function POST(req: Request) {
   if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
   const logId = inserted.id;
 
+  const [{ data: allSeniors }, { data: allCaregivers }] = await Promise.all([
+    supabase.from("seniors").select("name").eq("status", "active"),
+    supabase.from("caregivers").select("name").eq("status", "active"),
+  ]);
+  const { data: assigned } = await supabase
+    .from("caregiver_assignments")
+    .select("seniors(name)")
+    .eq("caregiver_id", workerId)
+    .eq("status", "active");
+  const { data: thisWorker } = await supabase
+    .from("caregivers")
+    .select("name")
+    .eq("id", workerId)
+    .single();
+  const knownNames = [
+    ...(allSeniors ?? []).map((r: any) => r.name),
+    ...(allCaregivers ?? []).map((r: any) => r.name),
+  ];
+  const preferredNames = [
+    ...(thisWorker ? [thisWorker.name] : []),
+    ...(assigned ?? []).map((a: any) => a.seniors?.name).filter(Boolean),
+  ];
+
   after(async () => {
     try {
-      const { transcript, summary } = await transcribeAndSummarize(buffer, mimeType, "counseling");
+      const { transcript, summary } = await transcribeAndSummarize(buffer, mimeType, "counseling", {
+        knownNames,
+        preferredNames,
+      });
       await supabase
         .from("counseling_logs")
         .update({ transcript, summary, status: "done" })
