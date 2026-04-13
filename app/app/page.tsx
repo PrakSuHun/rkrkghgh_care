@@ -72,15 +72,14 @@ export default function DashboardPage() {
             {filtered.length === 0 ? (
               <p className="text-sm text-gray-400 py-3 text-center">검색 결과 없음</p>
             ) : (
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {filtered.map((s) => (
                   <button
                     key={s.id}
                     onClick={() => setPicked(s)}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-gray-100 active:bg-indigo-600 active:text-white text-sm font-medium"
+                    className="h-12 px-2 rounded-xl bg-gray-100 active:bg-indigo-600 active:text-white text-sm font-medium flex items-center justify-center text-center truncate"
                   >
-                    <span>{s.name}</span>
-                    {s.grade && <span className="text-xs text-gray-500">{s.grade}</span>}
+                    {s.name}
                   </button>
                 ))}
               </div>
