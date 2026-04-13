@@ -17,7 +17,9 @@ export default function DashboardPage() {
     fetch("/api/seniors").then((r) => r.json()).then((j) => setSeniors(j.data ?? []));
   }, []);
 
-  const filtered = q ? seniors.filter((s) => s.name.includes(q)).slice(0, 8) : [];
+  const filtered = q
+    ? seniors.filter((s) => s.name.includes(q)).slice(0, 30)
+    : [...seniors].sort((a, b) => a.name.localeCompare(b.name, "ko"));
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
@@ -64,21 +66,23 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {q && !picked && (
-          <div className="space-y-1">
+        {!picked && (
+          <div>
             {filtered.length === 0 ? (
               <p className="text-sm text-gray-400 py-3 text-center">검색 결과 없음</p>
             ) : (
-              filtered.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => { setPicked(s); }}
-                  className="w-full text-left px-3 py-3 rounded-lg active:bg-indigo-100 border"
-                >
-                  <p className="font-medium">{s.name}</p>
-                  <p className="text-xs text-gray-500">{s.grade ?? ""} · {s.long_term_care_id ?? ""}</p>
-                </button>
-              ))
+              <div className="flex flex-wrap gap-2">
+                {filtered.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => setPicked(s)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-gray-100 active:bg-indigo-600 active:text-white text-sm font-medium"
+                  >
+                    <span>{s.name}</span>
+                    {s.grade && <span className="text-xs text-gray-500">{s.grade}</span>}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         )}
