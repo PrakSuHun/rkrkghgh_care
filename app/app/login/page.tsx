@@ -1,10 +1,9 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 function LoginForm() {
-  const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/";
   const [user, setUser] = useState("");
@@ -22,7 +21,7 @@ function LoginForm() {
       body: JSON.stringify({ user, pass }),
     });
     setLoading(false);
-    if (res.ok) router.replace(next);
+    if (res.ok) window.location.href = next;
     else setErr("아이디 또는 비밀번호가 올바르지 않습니다.");
   }
 

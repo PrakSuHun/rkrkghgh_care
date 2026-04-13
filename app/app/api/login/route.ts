@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 const APP_USER = process.env.APP_USER || "admin";
 const APP_PASSWORD = process.env.APP_PASSWORD;
@@ -13,19 +14,21 @@ export async function POST(req: Request) {
   if (user !== APP_USER || pass !== APP_PASSWORD) {
     return NextResponse.json({ error: "invalid credentials" }, { status: 401 });
   }
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set("care_session", SESSION_SECRET, {
+  const store = await cookies();
+  store.set({
+    name: "care_session",
+    value: SESSION_SECRET,
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
     sameSite: "lax",
     path: "/",
     maxAge: MAX_AGE,
   });
-  return res;
+  return NextResponse.json({ ok: true });
 }
 
 export async function DELETE() {
-  const res = NextResponse.json({ ok: true });
-  res.cookies.delete("care_session");
-  return res;
+  const store = await cookies();
+  store.delete("care_session");
+  return NextResponse.json({ ok: true });
 }
