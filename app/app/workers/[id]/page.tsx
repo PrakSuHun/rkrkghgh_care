@@ -3,8 +3,10 @@
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Mic, MessageSquare, Loader2, Pencil, Save, X } from "lucide-react";
+import { ArrowLeft, Mic, MessageSquare, Loader2, Trash2, Repeat, Plus, X } from "lucide-react";
 import RecordingDialog from "../../components/RecordingDialog";
+
+type Senior = { id: number; name: string; grade: string | null };
 
 export default function WorkerDetailPage() {
   const params = useParams();
@@ -12,16 +14,14 @@ export default function WorkerDetailPage() {
   const [recordOpen, setRecordOpen] = useState(false);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState<any>({});
+  const [swapFor, setSwapFor] = useState<any | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [allSeniors, setAllSeniors] = useState<Senior[]>([]);
+  const [pickerSearch, setPickerSearch] = useState("");
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/workers/${id}`);
-    if (res.ok) {
-      const json = await res.json();
-      setData(json);
-      setForm(json.worker);
-    }
+    if (res.ok) setData(await res.json());
     setLoading(false);
   }, [id]);
 
@@ -31,141 +31,161 @@ export default function WorkerDetailPage() {
     return () => clearInterval(interval);
   }, [load]);
 
-  async function save() {
-    const { fixed_weekly_schedules: _f, ...patch } = form;
-    const res = await fetch(`/api/workers/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
-    });
-    if (res.ok) {
-      setEditing(false);
-      load();
-    } else alert("저장 실패");
-  }
+  const openPicker = async (mode: "add" | any) => {
+    if (mode === "add") setAddOpen(true);
+    else setSwapFor(mode);
+    setPickerSearch("");
+    if (allSeniors.length === 0) {
+      const r = await fetch("/api/seniors?status=active");
+      const j = await r.json();
+      setAllSeniors((j.data ?? []).map((s: any) => ({ id: s.id, name: s.name, grade: s.grade })));
+    }
+  };
+
+  const closePicker = () => { setSwapFor(null); setAddOpen(false); };
+
+  const pickSenior = async (seniorId: number) => {
+    if (swapFor) {
+      const res = await fetch(`/api/assignments/${swapFor.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ senior_id: seniorId }),
+      });
+      if (!res.ok) { alert("교체 실패"); return; }
+    } else if (addOpen) {
+      const res = await fetch(`/api/assignments`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          caregiver_id: Number(id), senior_id: seniorId,
+          role: "주담당", start_date: new Date().toISOString().slice(0, 10), status: "active",
+        }),
+      });
+      if (!res.ok) { alert("추가 실패"); return; }
+    }
+    closePicker();
+    load();
+  };
+
+  const unassign = async (assignmentId: number) => {
+    if (!confirm("배정을 해제할까요?")) return;
+    const res = await fetch(`/api/assignments/${assignmentId}`, { method: "DELETE" });
+    if (!res.ok) { alert("해제 실패"); return; }
+    load();
+  };
+
+  const deleteLog = async (logId: number) => {
+    if (!confirm("이 상담일지를 삭제할까요? (복구할 수 없습니다)")) return;
+    const res = await fetch(`/api/counseling/${logId}`, { method: "DELETE" });
+    if (!res.ok) { alert("삭제 실패"); return; }
+    load();
+  };
 
   if (loading) return <div className="p-6">로딩 중...</div>;
   if (!data?.worker) return <div className="p-6">요양보호사를 찾을 수 없습니다.</div>;
 
   const w = data.worker;
   const logs = data.logs ?? [];
-  const assignments = data.assignments ?? [];
+  const assignments = (data.assignments ?? []).filter((a: any) => a.status === "active");
+  const filtered = pickerSearch
+    ? allSeniors.filter((s) => s.name.includes(pickerSearch))
+    : allSeniors;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <Link href="/workers" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+    <div className="px-4 py-4 sm:p-6 max-w-3xl mx-auto space-y-4">
+      <Link href="/workers" className="inline-flex items-center text-sm text-gray-600 active:text-gray-900">
         <ArrowLeft className="w-4 h-4 mr-1" /> 목록으로
       </Link>
 
-      <section className="bg-white border border-gray-200 rounded-xl p-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{w.name}</h1>
-            <p className="text-sm text-gray-500 mt-1">종사자 #{w.id} · {w.job_type ?? "요양보호사"}</p>
+      <section className="bg-white border rounded-xl p-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-gray-900 truncate">{w.name}</h1>
+            <p className="text-xs text-gray-500 mt-0.5">{w.job_type ?? "요양보호사"}</p>
           </div>
-          <div className="flex gap-2">
-            {!editing ? (
-              <>
-                <button onClick={() => setEditing(true)} className="inline-flex items-center px-3 py-2 border rounded-lg text-sm hover:bg-gray-50"><Pencil className="w-4 h-4 mr-1" /> 편집</button>
-                <button onClick={() => setRecordOpen(true)} className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg"><Mic className="w-4 h-4 mr-2" /> 상담 녹음</button>
-              </>
-            ) : (
-              <>
-                <button onClick={() => { setEditing(false); setForm(w); }} className="inline-flex items-center px-3 py-2 border rounded-lg text-sm"><X className="w-4 h-4 mr-1" /> 취소</button>
-                <button onClick={save} className="inline-flex items-center px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm"><Save className="w-4 h-4 mr-1" /> 저장</button>
-              </>
-            )}
-          </div>
+          <button
+            onClick={() => setRecordOpen(true)}
+            className="min-h-[44px] inline-flex items-center px-4 py-2 bg-emerald-600 active:bg-emerald-800 text-white rounded-lg font-medium"
+          >
+            <Mic className="w-4 h-4 mr-2" /> 상담 녹음
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-6">
-          <Field label="연락처" value={w.phone} editing={editing} type="tel" inputMode="tel" onChange={(v) => setForm({ ...form, phone: v })} />
-          <Field label="직종" value={w.job_type} editing={editing} onChange={(v) => setForm({ ...form, job_type: v })} />
-          <Field label="자격증 번호" value={w.license_number} editing={editing} onChange={(v) => setForm({ ...form, license_number: v })} />
-          <Field label="자격증 등급" value={w.license_grade} editing={editing} onChange={(v) => setForm({ ...form, license_grade: v })} />
-          <Field label="자격증 발급일" value={w.license_issued_at} editing={editing} type="date" onChange={(v) => setForm({ ...form, license_issued_at: v })} />
-          <Field label="자격증 발급기관" value={w.license_issuer} editing={editing} onChange={(v) => setForm({ ...form, license_issuer: v })} />
-          <Field label="입사일" value={w.hire_date} editing={editing} type="date" onChange={(v) => setForm({ ...form, hire_date: v })} />
-          <Field label="퇴사일" value={w.terminated_at} editing={editing} type="date" onChange={(v) => setForm({ ...form, terminated_at: v })} />
-          <Field label="근무형태" value={w.employment_type} editing={editing} onChange={(v) => setForm({ ...form, employment_type: v })} />
-          <Field label="주당 근무시간" value={w.weekly_hours} editing={editing} onChange={(v) => setForm({ ...form, weekly_hours: v ? Number(v) : null })} />
-          <Field label="임금 유형" value={w.wage_type} editing={editing} onChange={(v) => setForm({ ...form, wage_type: v })} />
-          <Field label="임금" value={w.wage_amount} editing={editing} onChange={(v) => setForm({ ...form, wage_amount: v ? Number(v) : null })} />
-          <Field label="계약 시작" value={w.contract_start} editing={editing} type="date" onChange={(v) => setForm({ ...form, contract_start: v })} />
-          <Field label="계약 종료" value={w.contract_end} editing={editing} type="date" onChange={(v) => setForm({ ...form, contract_end: v })} />
-          <Field label="주소" value={w.address} editing={editing} onChange={(v) => setForm({ ...form, address: v })} />
-          <Field label="은행" value={w.bank_name} editing={editing} onChange={(v) => setForm({ ...form, bank_name: v })} />
-        </div>
-
-        <div className="mt-4">
-          <p className="text-xs text-gray-500 mb-2">4대보험</p>
-          <div className="flex gap-4 text-sm">
-            {["insurance_nhis", "insurance_pension", "insurance_employment", "insurance_workers_comp"].map((k) => (
-              <label key={k} className="flex items-center gap-1">
-                <input
-                  type="checkbox"
-                  disabled={!editing}
-                  checked={!!form[k]}
-                  onChange={(e) => setForm({ ...form, [k]: e.target.checked })}
-                />
-                {k === "insurance_nhis" ? "건강" : k === "insurance_pension" ? "국민연금" : k === "insurance_employment" ? "고용" : "산재"}
-              </label>
-            ))}
+        <div className="mt-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-gray-500">담당 대상자</p>
+            <button
+              onClick={() => openPicker("add")}
+              className="min-h-[36px] inline-flex items-center gap-1 text-xs px-3 py-2 bg-gray-100 active:bg-gray-300 rounded-lg"
+            >
+              <Plus className="w-3 h-3" /> 추가
+            </button>
           </div>
-        </div>
-      </section>
-
-      {/* 담당 어르신 */}
-      <section className="bg-white border border-gray-200 rounded-xl p-6">
-        <h2 className="text-lg font-semibold mb-4">담당 어르신</h2>
-        {assignments.length === 0 ? (
-          <p className="text-sm text-gray-400">배정된 어르신이 없습니다.</p>
-        ) : (
-          <div className="space-y-2">
-            {assignments.map((a: any) => (
-              <div key={a.id} className="flex items-center justify-between border rounded-lg p-3">
-                <div>
-                  <p className="font-medium">{a.seniors?.name} <span className="text-xs text-gray-500">({a.role})</span></p>
-                  <p className="text-xs text-gray-500">{a.seniors?.grade} · {a.start_date} ~ {a.end_date ?? "진행중"}</p>
+          {assignments.length === 0 ? (
+            <p className="text-sm text-amber-600">배정된 대상자가 없습니다.</p>
+          ) : (
+            <div className="space-y-2">
+              {assignments.map((a: any) => (
+                <div key={a.id} className="flex items-center justify-between gap-2 border rounded-lg p-3">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{a.seniors?.name}</p>
+                    <p className="text-xs text-gray-500 truncate">{a.seniors?.grade ?? "등급-"}</p>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <button
+                      onClick={() => openPicker(a)}
+                      className="min-h-[36px] inline-flex items-center gap-1 text-xs px-3 py-2 bg-gray-100 active:bg-gray-300 rounded-lg"
+                    >
+                      <Repeat className="w-3 h-3" /> 교체
+                    </button>
+                    <button
+                      onClick={() => unassign(a.id)}
+                      className="min-h-[36px] inline-flex items-center gap-1 text-xs px-3 py-2 bg-red-50 text-red-600 active:bg-red-100 rounded-lg"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
-                <span className={`text-xs px-2 py-1 rounded ${a.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100"}`}>{a.status}</span>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
-      {/* 상담 일지 */}
-      <section className="bg-white border border-gray-200 rounded-xl p-6">
-        <div className="flex items-center justify-between mb-4">
+      <section className="bg-white border rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <MessageSquare className="w-5 h-5 text-emerald-600" />
-            <h2 className="text-lg font-semibold">상담 일지</h2>
+            <h2 className="text-base font-semibold">상담 일지</h2>
           </div>
-          <span className="text-sm text-gray-500">총 {logs.length}건</span>
+          <span className="text-xs text-gray-500">총 {logs.length}건</span>
         </div>
         {logs.length === 0 ? (
           <div className="text-center py-8 text-gray-400">상담일지가 없습니다.</div>
         ) : (
           <div className="space-y-3">
             {logs.map((l: any) => (
-              <div key={l.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <p className="text-xs text-gray-500">
+              <div key={l.id} className="border rounded-lg p-3">
+                <div className="flex justify-between items-center mb-2 gap-2">
+                  <p className="text-xs text-gray-500 min-w-0 truncate">
                     {new Date(l.created_at).toLocaleString("ko-KR")} · {Math.floor(l.duration / 60)}분 {l.duration % 60}초
                   </p>
-                  {l.status === "processing" && <span className="flex items-center gap-1 text-xs text-amber-600"><Loader2 className="w-3 h-3 animate-spin" /> 변환 중</span>}
-                  {l.status === "done" && <span className="text-xs text-green-600">완료</span>}
-                  {l.status === "failed" && <span className="text-xs text-red-600">실패</span>}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {l.status === "processing" && <span className="flex items-center gap-1 text-xs text-amber-600"><Loader2 className="w-3 h-3 animate-spin" /> 변환중</span>}
+                    {l.status === "done" && <span className="text-xs text-green-600">완료</span>}
+                    {l.status === "failed" && <span className="text-xs text-red-600">실패</span>}
+                    <button
+                      onClick={() => deleteLog(l.id)}
+                      className="min-h-[32px] p-2 text-red-500 active:bg-red-50 rounded-lg"
+                      aria-label="삭제"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
                 {l.summary && (
-                  <div className="mb-2">
-                    <p className="text-xs font-semibold text-gray-700 mb-1">📋 AI 상담 요약</p>
-                    <p className="text-sm whitespace-pre-wrap bg-emerald-50 p-3 rounded">{l.summary}</p>
-                  </div>
+                  <p className="text-sm whitespace-pre-wrap bg-emerald-50 p-3 rounded">{l.summary}</p>
                 )}
                 {l.transcript && (
-                  <details className="text-sm">
+                  <details className="text-sm mt-2">
                     <summary className="cursor-pointer text-xs text-gray-500">원본 텍스트 보기</summary>
                     <p className="mt-2 whitespace-pre-wrap text-gray-700">{l.transcript}</p>
                   </details>
@@ -176,6 +196,40 @@ export default function WorkerDetailPage() {
         )}
       </section>
 
+      {(swapFor || addOpen) && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center">
+          <div className="bg-white w-full sm:max-w-md max-h-[85vh] rounded-t-2xl sm:rounded-2xl p-4 flex flex-col">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">{swapFor ? "대상자 교체" : "대상자 추가"}</h3>
+              <button onClick={closePicker} className="p-2 active:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+            <input
+              type="search"
+              inputMode="search"
+              placeholder="이름으로 검색"
+              value={pickerSearch}
+              onChange={(e) => setPickerSearch(e.target.value)}
+              className="w-full border rounded-lg px-3 py-3 text-base mb-3"
+            />
+            <div className="flex-1 overflow-y-auto space-y-1">
+              {filtered.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => pickSenior(s.id)}
+                  className="w-full text-left min-h-[48px] px-3 py-2 active:bg-gray-100 rounded-lg flex items-center justify-between"
+                >
+                  <span className="font-medium">{s.name}</span>
+                  <span className="text-xs text-gray-500">{s.grade ?? ""}</span>
+                </button>
+              ))}
+              {filtered.length === 0 && (
+                <p className="text-center text-sm text-gray-400 py-8">결과가 없습니다</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <RecordingDialog
         open={recordOpen}
         onClose={() => setRecordOpen(false)}
@@ -185,26 +239,6 @@ export default function WorkerDetailPage() {
         entityId={w.id}
         onComplete={load}
       />
-    </div>
-  );
-}
-
-function Field({ label, value, editing, onChange, type = "text", inputMode }: {
-  label: string;
-  value: any;
-  editing: boolean;
-  onChange: (v: any) => void;
-  type?: string;
-  inputMode?: "text" | "numeric" | "tel" | "decimal" | "email" | "url" | "search";
-}) {
-  return (
-    <div>
-      <p className="text-xs text-gray-500">{label}</p>
-      {editing ? (
-        <input type={type} inputMode={inputMode} value={value ?? ""} onChange={(e) => onChange(e.target.value)} className="mt-1 w-full border rounded-lg px-3 py-2 text-base" />
-      ) : (
-        <p className="font-medium text-sm break-all">{value ?? "-"}</p>
-      )}
     </div>
   );
 }
