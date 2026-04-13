@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+/tmp/care-next
+app/tmp/
+tmp/
+
+# Env / secrets
+.env
+.env.local
+.env*.local
+.mcp.json
+
+# Sensitive personal data (어르신 개인정보)
+Autocare/
+대상자 욕구사정*.csv
+*.csv
+data/
+
+# Logs
+*.log
+npm-debug.log*
+
+# macOS metadata (exFAT AppleDouble)
+._*
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts

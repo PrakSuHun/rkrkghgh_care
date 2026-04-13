@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    body {
+      width: 280px;
+      font-family: -apple-system, sans-serif;
+      padding: 16px;
+      margin: 0;
+      background: #f9fafb;
+    }
+    h1 {
+      font-size: 16px;
+      margin: 0 0 12px 0;
+      color: #4f46e5;
+    }
+    .status {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    button:hover { background: #4338ca; }
+    button:disabled { background: #9ca3af; cursor: not-allowed; }
+    .link {
+      display: block;
+      margin-top: 12px;
+      font-size: 12px;
+      color: #4f46e5;
+      text-decoration: none;
+      text-align: center;
+    }
+    .result {
+      margin-top: 12px;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      display: none;
+    }
+    .result.success { background: #d1fae5; color: #065f46; }
+    .result.error { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+  <h1>CareLink 태그 모니터</h1>
+  <div class="status" id="status">공단 사이트에서 태그 페이지 열고 수집 버튼을 누르세요</div>
+  <button id="collect">태그 수집</button>
+  <div class="result" id="result"></div>
+  <a href="http://localhost:3000/tag-monitor" target="_blank" class="link">→ CareLink 대시보드 열기</a>
+
+  <script src="popup.js"></script>
+</body>
+</html>

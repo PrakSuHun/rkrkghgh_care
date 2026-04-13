@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "CareLink 태그 모니터",
+  "version": "0.1.0",
+  "description": "공단 장기요양시스템 태그 기록을 자동으로 CareLink로 전송합니다",
+  "permissions": ["activeTab", "storage", "scripting"],
+  "host_permissions": [
+    "https://*.longtermcare.or.kr/*",
+    "https://*.nhis.or.kr/*",
+    "http://localhost:3000/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "CareLink 태그 모니터"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.longtermcare.or.kr/*",
+        "https://*.nhis.or.kr/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
