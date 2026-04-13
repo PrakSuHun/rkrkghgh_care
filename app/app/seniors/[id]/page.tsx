@@ -3,8 +3,10 @@
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Mic, FileText, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, Mic, FileText, Loader2, Trash2, Repeat, Plus, X } from "lucide-react";
 import RecordingDialog from "../../components/RecordingDialog";
+
+type Worker = { id: number; name: string; phone: string | null };
 
 export default function SeniorDetailPage() {
   const params = useParams();
@@ -12,13 +14,14 @@ export default function SeniorDetailPage() {
   const [recordOpen, setRecordOpen] = useState(false);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [swapFor, setSwapFor] = useState<any | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [allWorkers, setAllWorkers] = useState<Worker[]>([]);
+  const [pickerSearch, setPickerSearch] = useState("");
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/seniors/${id}`);
-    if (res.ok) {
-      const json = await res.json();
-      setData(json);
-    }
+    if (res.ok) setData(await res.json());
     setLoading(false);
   }, [id]);
 
@@ -27,6 +30,47 @@ export default function SeniorDetailPage() {
     const interval = setInterval(load, 3000);
     return () => clearInterval(interval);
   }, [load]);
+
+  const openPicker = async (mode: "add" | any) => {
+    if (mode === "add") setAddOpen(true);
+    else setSwapFor(mode);
+    setPickerSearch("");
+    if (allWorkers.length === 0) {
+      const r = await fetch("/api/workers?status=active");
+      const j = await r.json();
+      setAllWorkers((j.data ?? []).map((w: any) => ({ id: w.id, name: w.name, phone: w.phone })));
+    }
+  };
+
+  const closePicker = () => { setSwapFor(null); setAddOpen(false); };
+
+  const pickWorker = async (workerId: number) => {
+    if (swapFor) {
+      const res = await fetch(`/api/assignments/${swapFor.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caregiver_id: workerId }),
+      });
+      if (!res.ok) { alert("교체 실패"); return; }
+    } else if (addOpen) {
+      const res = await fetch(`/api/assignments`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          senior_id: Number(id), caregiver_id: workerId,
+          role: "주담당", start_date: new Date().toISOString().slice(0, 10), status: "active",
+        }),
+      });
+      if (!res.ok) { alert("추가 실패"); return; }
+    }
+    closePicker();
+    load();
+  };
+
+  const unassign = async (assignmentId: number) => {
+    if (!confirm("배정을 해제할까요?")) return;
+    const res = await fetch(`/api/assignments/${assignmentId}`, { method: "DELETE" });
+    if (!res.ok) { alert("해제 실패"); return; }
+    load();
+  };
 
   const deleteJournal = async (journalId: number) => {
     if (!confirm("이 일지를 삭제할까요? (복구할 수 없습니다)")) return;
@@ -41,6 +85,9 @@ export default function SeniorDetailPage() {
   const s = data.senior;
   const journals = data.journals ?? [];
   const assignments = (data.assignments ?? []).filter((a: any) => a.status === "active");
+  const filtered = pickerSearch
+    ? allWorkers.filter((w) => w.name.includes(pickerSearch))
+    : allWorkers;
 
   return (
     <div className="px-4 py-4 sm:p-6 max-w-3xl mx-auto space-y-4">
@@ -64,15 +111,40 @@ export default function SeniorDetailPage() {
         </div>
 
         <div className="mt-3">
-          <p className="text-xs text-gray-500 mb-1">담당 요양보호사</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-gray-500">담당 요양보호사</p>
+            <button
+              onClick={() => openPicker("add")}
+              className="min-h-[36px] inline-flex items-center gap-1 text-xs px-3 py-2 bg-gray-100 active:bg-gray-300 rounded-lg"
+            >
+              <Plus className="w-3 h-3" /> 추가
+            </button>
+          </div>
           {assignments.length === 0 ? (
             <p className="text-sm text-amber-600">배정된 요양보호사가 없습니다.</p>
           ) : (
-            <div className="flex flex-wrap gap-2">
+            <div className="space-y-2">
               {assignments.map((a: any) => (
-                <span key={a.id} className="text-sm bg-gray-100 text-gray-800 px-3 py-1 rounded-full">
-                  {a.caregivers?.name}
-                </span>
+                <div key={a.id} className="flex items-center justify-between gap-2 border rounded-lg p-3">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{a.caregivers?.name}</p>
+                    <p className="text-xs text-gray-500 truncate">{a.caregivers?.phone ?? ""}</p>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <button
+                      onClick={() => openPicker(a)}
+                      className="min-h-[36px] inline-flex items-center gap-1 text-xs px-3 py-2 bg-gray-100 active:bg-gray-300 rounded-lg"
+                    >
+                      <Repeat className="w-3 h-3" /> 교체
+                    </button>
+                    <button
+                      onClick={() => unassign(a.id)}
+                      className="min-h-[36px] inline-flex items-center gap-1 text-xs px-3 py-2 bg-red-50 text-red-600 active:bg-red-100 rounded-lg"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           )}
@@ -92,7 +164,7 @@ export default function SeniorDetailPage() {
         ) : (
           <div className="space-y-3">
             {journals.map((j: any) => (
-              <div key={j.id} className="border border-gray-200 rounded-lg p-4">
+              <div key={j.id} className="border rounded-lg p-3">
                 <div className="flex justify-between items-center mb-2 gap-2">
                   <p className="text-xs text-gray-500 min-w-0 truncate">
                     {new Date(j.created_at).toLocaleString("ko-KR")} · {Math.floor(j.duration / 60)}분 {j.duration % 60}초
@@ -111,13 +183,10 @@ export default function SeniorDetailPage() {
                   </div>
                 </div>
                 {j.summary && (
-                  <div className="mb-2">
-                    <p className="text-xs font-semibold text-gray-700 mb-1">📋 AI 일지 요약</p>
-                    <p className="text-sm whitespace-pre-wrap bg-indigo-50 p-3 rounded">{j.summary}</p>
-                  </div>
+                  <p className="text-sm whitespace-pre-wrap bg-indigo-50 p-3 rounded">{j.summary}</p>
                 )}
                 {j.transcript && (
-                  <details className="text-sm">
+                  <details className="text-sm mt-2">
                     <summary className="cursor-pointer text-xs text-gray-500">원본 텍스트 보기</summary>
                     <p className="mt-2 whitespace-pre-wrap text-gray-700">{j.transcript}</p>
                   </details>
@@ -127,6 +196,40 @@ export default function SeniorDetailPage() {
           </div>
         )}
       </section>
+
+      {(swapFor || addOpen) && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center">
+          <div className="bg-white w-full sm:max-w-md max-h-[85vh] rounded-t-2xl sm:rounded-2xl p-4 flex flex-col">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">{swapFor ? "요양보호사 교체" : "요양보호사 추가"}</h3>
+              <button onClick={closePicker} className="p-2 active:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+            <input
+              type="search"
+              inputMode="search"
+              placeholder="이름으로 검색"
+              value={pickerSearch}
+              onChange={(e) => setPickerSearch(e.target.value)}
+              className="w-full border rounded-lg px-3 py-3 text-base mb-3"
+            />
+            <div className="flex-1 overflow-y-auto space-y-1">
+              {filtered.map((w) => (
+                <button
+                  key={w.id}
+                  onClick={() => pickWorker(w.id)}
+                  className="w-full text-left min-h-[48px] px-3 py-2 active:bg-gray-100 rounded-lg flex items-center justify-between"
+                >
+                  <span className="font-medium">{w.name}</span>
+                  <span className="text-xs text-gray-500">{w.phone ?? ""}</span>
+                </button>
+              ))}
+              {filtered.length === 0 && (
+                <p className="text-center text-sm text-gray-400 py-8">결과가 없습니다</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <RecordingDialog
         open={recordOpen}
@@ -140,4 +243,3 @@ export default function SeniorDetailPage() {
     </div>
   );
 }
-
