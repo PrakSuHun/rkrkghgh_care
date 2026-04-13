@@ -3,7 +3,10 @@ import { cookies } from "next/headers";
 
 const APP_USER = process.env.APP_USER || "admin";
 const APP_PASSWORD = process.env.APP_PASSWORD;
-const SESSION_SECRET = process.env.SESSION_SECRET || APP_PASSWORD || "";
+const RAW_SECRET = process.env.SESSION_SECRET || APP_PASSWORD || "";
+const SESSION_TOKEN = RAW_SECRET
+  ? Buffer.from(RAW_SECRET, "utf8").toString("base64").replace(/=+$/, "")
+  : "";
 const MAX_AGE = 60 * 60 * 24 * 30; // 30일
 
 export async function POST(req: Request) {
@@ -17,7 +20,7 @@ export async function POST(req: Request) {
   const store = await cookies();
   store.set({
     name: "care_session",
-    value: SESSION_SECRET,
+    value: SESSION_TOKEN,
     httpOnly: true,
     secure: true,
     sameSite: "lax",

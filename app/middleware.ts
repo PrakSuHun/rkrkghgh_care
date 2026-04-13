@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const APP_PASSWORD = process.env.APP_PASSWORD;
-const SESSION_SECRET = process.env.SESSION_SECRET || APP_PASSWORD || "";
+const RAW_SECRET = process.env.SESSION_SECRET || APP_PASSWORD || "";
+// 특수문자 안전한 토큰으로 변환 (양쪽 동일 알고리즘)
+const SESSION_TOKEN = RAW_SECRET
+  ? Buffer.from(RAW_SECRET, "utf8").toString("base64").replace(/=+$/, "")
+  : "";
 const EXTENSION_SECRET = process.env.EXTENSION_SECRET;
 
 function json(status: number, body: unknown) {
@@ -27,7 +31,7 @@ export function middleware(req: NextRequest) {
 
   // 세션 쿠키 검사
   const session = req.cookies.get("care_session")?.value;
-  const ok = SESSION_SECRET && session === SESSION_SECRET;
+  const ok = SESSION_TOKEN && session === SESSION_TOKEN;
 
   if (!ok) {
     if (pathname.startsWith("/api/")) return json(401, { error: "unauthorized" });
