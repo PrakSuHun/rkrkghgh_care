@@ -20,7 +20,7 @@ export default function TopNav() {
           <Link href="/" className="text-xl font-bold text-indigo-600 mr-8">
             CareLink
           </Link>
-          <div className="flex space-x-1">
+          <div className="flex space-x-1 flex-1">
             {tabs.map((tab) => {
               const active = pathname === tab.href;
               return (
@@ -38,6 +38,15 @@ export default function TopNav() {
               );
             })}
           </div>
+          <button
+            onClick={async () => {
+              await fetch("/api/login", { method: "DELETE" });
+              window.location.href = "/login";
+            }}
+            className="px-3 py-2 text-sm text-gray-600 hover:text-red-600"
+          >
+            로그아웃
+          </button>
         </div>
       </div>
     </nav>
