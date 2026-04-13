@@ -93,7 +93,7 @@ export default function SeniorDetailPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-6">
           <Field label="등급" value={s.grade} editing={editing} onChange={(v) => setForm({ ...form, grade: v })} />
           <Field label="생년월일" value={s.birth_date} editing={editing} type="date" onChange={(v) => setForm({ ...form, birth_date: v })} />
           <Field label="장기요양인정번호" value={s.long_term_care_id} editing={editing} onChange={(v) => setForm({ ...form, long_term_care_id: v })} />
@@ -108,7 +108,7 @@ export default function SeniorDetailPage() {
           <Field label="주소" value={s.address} editing={editing} onChange={(v) => setForm({ ...form, address: v })} />
           <Field label="주보호자 이름" value={s.guardian_name} editing={editing} onChange={(v) => setForm({ ...form, guardian_name: v })} />
           <Field label="주보호자 관계" value={s.guardian_relation} editing={editing} onChange={(v) => setForm({ ...form, guardian_relation: v })} />
-          <Field label="주보호자 전화" value={s.guardian_phone} editing={editing} onChange={(v) => setForm({ ...form, guardian_phone: v })} />
+          <Field label="주보호자 전화" value={s.guardian_phone} editing={editing} type="tel" inputMode="tel" onChange={(v) => setForm({ ...form, guardian_phone: v })} />
           <Field label="장애등록번호" value={s.disability_reg_no} editing={editing} onChange={(v) => setForm({ ...form, disability_reg_no: v })} />
           <Field label="장애등급" value={s.disability_grade} editing={editing} onChange={(v) => setForm({ ...form, disability_grade: v })} />
           <Field label="국가보훈여부" value={s.is_veteran ? "예" : "아니오"} editing={editing} onChange={(v) => setForm({ ...form, is_veteran: v === "예" })} />
@@ -229,12 +229,13 @@ export default function SeniorDetailPage() {
   );
 }
 
-function Field({ label, value, editing, onChange, type = "text" }: {
+function Field({ label, value, editing, onChange, type = "text", inputMode }: {
   label: string;
   value: any;
   editing: boolean;
   onChange: (v: any) => void;
   type?: string;
+  inputMode?: "text" | "numeric" | "tel" | "decimal" | "email" | "url" | "search";
 }) {
   return (
     <div>
@@ -242,12 +243,13 @@ function Field({ label, value, editing, onChange, type = "text" }: {
       {editing ? (
         <input
           type={type}
+          inputMode={inputMode}
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value)}
-          className="mt-1 w-full border rounded px-2 py-1 text-sm"
+          className="mt-1 w-full border rounded-lg px-3 py-2 text-base"
         />
       ) : (
-        <p className="font-medium text-sm">{value ?? "-"}</p>
+        <p className="font-medium text-sm break-all">{value ?? "-"}</p>
       )}
     </div>
   );

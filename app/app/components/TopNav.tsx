@@ -55,12 +55,12 @@ export default function TopNav() {
                 <Link
                   key={tab.href}
                   href={tab.href}
-                  className={`flex flex-col items-center justify-center py-2 gap-0.5 ${
+                  className={`flex flex-col items-center justify-center min-h-[56px] py-1.5 gap-0.5 ${
                     active ? "text-indigo-600" : "text-gray-500"
                   }`}
                 >
                   <Icon className="w-5 h-5" />
-                  <span className="text-[11px] font-medium">{tab.label}</span>
+                  <span className="text-[11px] font-medium whitespace-nowrap">{tab.label}</span>
                 </Link>
               );
             })}

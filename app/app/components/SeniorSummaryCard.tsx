@@ -66,7 +66,7 @@ export default function SeniorSummaryCard({ senior, onUpdated }: { senior: Recor
 
   return (
     <div className="bg-white border rounded-2xl p-4 space-y-3">
-      <div className="flex items-center justify-between sticky top-0 bg-white pb-2 border-b">
+      <div className="flex items-center justify-between sticky top-14 bg-white pb-2 border-b z-10">
         <div>
           <h2 className="text-lg font-bold">{senior.name}</h2>
           <p className="text-xs text-gray-500">

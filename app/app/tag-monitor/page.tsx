@@ -5,10 +5,10 @@ import { RefreshCw, AlertCircle } from "lucide-react";
 
 type TagRecord = {
   id: number;
-  raw_data: string;
+  raw_data: any;
   source_url: string;
   collected_at: number;
-  status: string;
+  status?: string;
 };
 
 export default function TagMonitorPage() {
@@ -29,7 +29,7 @@ export default function TagMonitorPage() {
   }, []);
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">태그 모니터링</h1>
@@ -56,38 +56,21 @@ export default function TagMonitorPage() {
           아직 수집된 태그 기록이 없습니다.
         </div>
       ) : (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-700">수집 시각</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-700">데이터</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-700">상태</th>
-              </tr>
-            </thead>
-            <tbody>
-              {records.map((r) => {
-                const data = JSON.parse(r.raw_data);
-                return (
-                  <tr key={r.id} className="border-b last:border-b-0">
-                    <td className="px-4 py-3 text-gray-600">
-                      {new Date(r.collected_at).toLocaleString("ko-KR")}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2 flex-wrap">
-                        {(data.raw ?? []).map((cell: string, i: number) => (
-                          <span key={i} className="bg-gray-100 px-2 py-0.5 rounded text-xs">{cell}</span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded">{r.status}</span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="space-y-2">
+          {records.map((r) => {
+            const data = typeof r.raw_data === "string" ? JSON.parse(r.raw_data) : r.raw_data ?? {};
+            const cells: string[] = data.raw ?? [];
+            return (
+              <div key={r.id} className="bg-white border rounded-xl p-3">
+                <p className="text-xs text-gray-500 mb-2">{new Date(r.collected_at).toLocaleString("ko-KR")}</p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {cells.map((cell, i) => (
+                    <span key={i} className="bg-gray-100 px-2 py-0.5 rounded text-xs break-all">{cell}</span>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

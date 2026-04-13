@@ -23,7 +23,7 @@ html, body {
 }
 
 body {
-  padding-bottom: calc(64px + var(--safe-bottom));
+  padding-bottom: calc(56px + var(--safe-bottom));
 }
 
 /* 로그인 페이지는 하단 탭 없음 */

@@ -53,7 +53,8 @@ export default function DashboardPage() {
         <div className="relative">
           <Search className="w-5 h-5 absolute left-3 top-3.5 text-gray-400" />
           <input
-            type="text"
+            type="search"
+            inputMode="search"
             placeholder="어르신 이름 검색"
             value={q}
             onChange={(e) => { setQ(e.target.value); setPicked(null); }}

@@ -78,8 +78,8 @@ export default function WorkerDetailPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
-          <Field label="연락처" value={w.phone} editing={editing} onChange={(v) => setForm({ ...form, phone: v })} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-6">
+          <Field label="연락처" value={w.phone} editing={editing} type="tel" inputMode="tel" onChange={(v) => setForm({ ...form, phone: v })} />
           <Field label="직종" value={w.job_type} editing={editing} onChange={(v) => setForm({ ...form, job_type: v })} />
           <Field label="자격증 번호" value={w.license_number} editing={editing} onChange={(v) => setForm({ ...form, license_number: v })} />
           <Field label="자격증 등급" value={w.license_grade} editing={editing} onChange={(v) => setForm({ ...form, license_grade: v })} />
@@ -189,20 +189,21 @@ export default function WorkerDetailPage() {
   );
 }
 
-function Field({ label, value, editing, onChange, type = "text" }: {
+function Field({ label, value, editing, onChange, type = "text", inputMode }: {
   label: string;
   value: any;
   editing: boolean;
   onChange: (v: any) => void;
   type?: string;
+  inputMode?: "text" | "numeric" | "tel" | "decimal" | "email" | "url" | "search";
 }) {
   return (
     <div>
       <p className="text-xs text-gray-500">{label}</p>
       {editing ? (
-        <input type={type} value={value ?? ""} onChange={(e) => onChange(e.target.value)} className="mt-1 w-full border rounded px-2 py-1 text-sm" />
+        <input type={type} inputMode={inputMode} value={value ?? ""} onChange={(e) => onChange(e.target.value)} className="mt-1 w-full border rounded-lg px-3 py-2 text-base" />
       ) : (
-        <p className="font-medium text-sm">{value ?? "-"}</p>
+        <p className="font-medium text-sm break-all">{value ?? "-"}</p>
       )}
     </div>
   );

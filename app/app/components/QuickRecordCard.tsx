@@ -10,12 +10,17 @@ type Props = {
   open: boolean;
   onClose: () => void;
   title: string;
-  listUrl: string;          // /api/seniors or /api/workers
+  listUrl: string;
   listField: "recipients" | "caregivers";
-  uploadUrl: string;        // /api/journals or /api/counseling
+  uploadUrl: string;
   uploadField: "senior_id" | "worker_id";
   accent: "indigo" | "emerald";
   onComplete?: () => void;
+};
+
+const ACCENT_CLASSES: Record<string, string> = {
+  indigo: "active:bg-indigo-50",
+  emerald: "active:bg-emerald-50",
 };
 
 export default function QuickRecordCard({
@@ -75,11 +80,12 @@ export default function QuickRecordCard({
             <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
             <input
               autoFocus
-              type="text"
+              type="search"
+              inputMode="search"
               placeholder="이름 검색"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm"
+              className="w-full pl-9 pr-3 py-3 border rounded-lg text-base"
             />
           </div>
         </div>
@@ -93,7 +99,7 @@ export default function QuickRecordCard({
               <button
                 key={p.id}
                 onClick={() => setSelected(p)}
-                className={`w-full text-left px-3 py-2 rounded-lg hover:bg-${accent}-50`}
+                className={`w-full text-left px-3 py-3 rounded-lg ${ACCENT_CLASSES[accent] ?? ""}`}
               >
                 <p className="font-medium">{p.name}</p>
                 {(p.grade || p.phone) && (

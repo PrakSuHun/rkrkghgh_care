@@ -125,33 +125,29 @@ export default function SeniorsPage() {
           {seniors.map((s) => (
             <Link key={s.id} href={`/seniors/${s.id}`}>
               <div className="bg-white border rounded-xl p-4 hover:shadow-md transition cursor-pointer">
-                <div className="grid grid-cols-[40px_72px_64px_1fr_auto] gap-3 items-center">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm shrink-0">
                     {s.name.charAt(0)}
                   </div>
-                  <div className="font-semibold truncate">{s.name}</div>
-                  <div>
-                    {s.grade ? (
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${GRADE_COLORS[s.grade] ?? "bg-gray-100 text-gray-600"}`}>
-                        {s.grade}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-gray-300">-</span>
-                    )}
-                  </div>
-                  <div className="min-w-0 text-xs text-gray-500">
-                    <div className="flex items-center gap-2">
-                      {s.birth_date && <span>{age(s.birth_date)}</span>}
-                      {s.long_term_care_id && <span className="truncate">{s.long_term_care_id}</span>}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold truncate">{s.name}</span>
+                      {s.grade && (
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${GRADE_COLORS[s.grade] ?? "bg-gray-100 text-gray-600"}`}>
+                          {s.grade}
+                        </span>
+                      )}
+                      {s.birth_date && <span className="text-xs text-gray-500">{age(s.birth_date)}</span>}
                       {s.status !== "active" && (
-                        <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                        <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
                           {STATUS_LABELS[s.status] ?? s.status}
                         </span>
                       )}
                     </div>
-                    <div className="mt-0.5 truncate">
+                    <div className="mt-0.5 text-xs text-gray-500 truncate">
+                      {s.long_term_care_id && <span>{s.long_term_care_id} · </span>}
                       담당 {s.caregiver_names.length === 0 ? <span className="text-amber-600">미배정</span> : s.caregiver_names.join(", ")}
-                      {s.last_journal_at && <span className="ml-2">· 최근 일지 {fmtDate(s.last_journal_at)}</span>}
+                      {s.last_journal_at && <span> · 최근 {fmtDate(s.last_journal_at)}</span>}
                     </div>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-300" />

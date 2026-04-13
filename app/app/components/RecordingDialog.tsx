@@ -13,6 +13,19 @@ type Props = {
   onComplete: () => void;
 };
 
+const MIME_EXT: Record<string, string> = {
+  "audio/webm": "webm",
+  "audio/mp4": "m4a",
+  "audio/mpeg": "mp3",
+  "audio/ogg": "ogg",
+  "audio/wav": "wav",
+};
+
+function extOfMime(mime: string): string {
+  const base = mime.split(";")[0].trim().toLowerCase();
+  return MIME_EXT[base] ?? "webm";
+}
+
 export default function RecordingDialog({ open, onClose, title, uploadUrl, uploadField, entityId, onComplete }: Props) {
   const [recording, setRecording] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -20,6 +33,9 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [pauseSupported, setPauseSupported] = useState(true);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -29,15 +45,14 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
   const analyserRef = useRef<AnalyserNode | null>(null);
   const rafRef = useRef<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const pausedRef = useRef(false);
 
   const acquireWakeLock = async () => {
     try {
       if ("wakeLock" in navigator) {
         wakeLockRef.current = await navigator.wakeLock.request("screen");
       }
-    } catch (err) {
-      console.warn("Wake Lock 실패:", err);
-    }
+    } catch {}
   };
 
   const releaseWakeLock = async () => {
@@ -48,16 +63,23 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
   };
 
   useEffect(() => {
-    if (!open) {
-      cleanup();
-    }
+    if (!open) cleanup();
   }, [open]);
+
+  // 화면 가시성 복귀 시 Wake Lock 재획득
+  useEffect(() => {
+    function onVisChange() {
+      if (document.visibilityState === "visible" && recording) acquireWakeLock();
+    }
+    document.addEventListener("visibilitychange", onVisChange);
+    return () => document.removeEventListener("visibilitychange", onVisChange);
+  }, [recording]);
 
   const cleanup = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     if (mediaRecorderRef.current?.state !== "inactive") {
-      mediaRecorderRef.current?.stop();
+      try { mediaRecorderRef.current?.stop(); } catch {}
     }
     mediaRecorderRef.current?.stream.getTracks().forEach((t) => t.stop());
     try { audioCtxRef.current?.close(); } catch {}
@@ -66,11 +88,22 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
     releaseWakeLock();
     setRecording(false);
     setPaused(false);
+    pausedRef.current = false;
     setElapsed(0);
     setAudioUrl(null);
     setAudioBlob(null);
     setProcessing(false);
+    setProgress(0);
+    setErrorMsg(null);
     chunksRef.current = [];
+  };
+
+  const tryClose = () => {
+    if (processing) {
+      setErrorMsg("업로드 중에는 닫을 수 없습니다.");
+      return;
+    }
+    onClose();
   };
 
   const drawWaveform = () => {
@@ -99,7 +132,7 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
       for (let j = 0; j < step; j++) sum += data[i * step + j] ?? 0;
       const avg = sum / step;
       const barHeight = Math.max(4, (avg / 255) * h * 0.9);
-      ctx.fillStyle = paused ? "#9ca3af" : "#ef4444";
+      ctx.fillStyle = pausedRef.current ? "#9ca3af" : "#ef4444";
       const x = i * barWidth + barWidth * 0.15;
       const y = (h - barHeight) / 2;
       ctx.fillRect(x, y, barWidth * 0.7, barHeight);
@@ -119,20 +152,23 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
       "audio/wav",
     ];
     for (const t of candidates) {
-      try {
-        if (MediaRecorder.isTypeSupported(t)) return t;
-      } catch {}
+      try { if (MediaRecorder.isTypeSupported(t)) return t; } catch {}
     }
     return "";
   };
 
   const startRecording = async () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert("이 브라우저에서는 녹음이 지원되지 않습니다. 최신 크롬/삼성인터넷/사파리를 사용해주세요.");
+    setErrorMsg(null);
+    if (!window.isSecureContext) {
+      setErrorMsg("보안 연결(HTTPS)이 필요합니다.");
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setErrorMsg("이 브라우저에서는 녹음이 지원되지 않습니다. 최신 크롬/삼성인터넷/사파리를 사용하세요.");
       return;
     }
     if (typeof MediaRecorder === "undefined") {
-      alert("이 브라우저는 녹음 기능을 지원하지 않습니다.");
+      setErrorMsg("이 브라우저는 녹음을 지원하지 않습니다.");
       return;
     }
     try {
@@ -143,6 +179,7 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
         : new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
+      setPauseSupported(typeof mediaRecorder.pause === "function");
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
@@ -158,7 +195,7 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
 
       mediaRecorder.onerror = (e: Event) => {
         const err = (e as any).error;
-        alert("녹음 중 오류: " + (err?.message ?? err?.name ?? "알 수 없음"));
+        setErrorMsg("녹음 중 오류: " + (err?.message ?? err?.name ?? "알 수 없음"));
       };
 
       // 파형 분석기 준비
@@ -166,6 +203,7 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
         const AC: typeof AudioContext =
           window.AudioContext || (window as any).webkitAudioContext;
         const audioCtx = new AC();
+        try { await audioCtx.resume(); } catch {}
         const source = audioCtx.createMediaStreamSource(stream);
         const analyser = audioCtx.createAnalyser();
         analyser.fftSize = 256;
@@ -186,57 +224,82 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
     } catch (err) {
       const name = (err as Error).name;
       if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-        alert("마이크 권한이 거부되었습니다. 브라우저 설정에서 허용해주세요.");
+        setErrorMsg("마이크 권한이 거부되었습니다. 브라우저 설정에서 허용해주세요.");
       } else if (name === "NotFoundError") {
-        alert("사용 가능한 마이크를 찾을 수 없습니다.");
+        setErrorMsg("사용 가능한 마이크를 찾을 수 없습니다.");
+      } else if (name === "SecurityError") {
+        setErrorMsg("보안 연결(HTTPS) 문제로 마이크를 사용할 수 없습니다.");
       } else {
-        alert("녹음 시작 실패: " + (err as Error).message);
+        setErrorMsg("녹음 시작 실패: " + (err as Error).message);
       }
     }
   };
 
   const togglePause = () => {
-    if (!mediaRecorderRef.current) return;
+    const mr = mediaRecorderRef.current;
+    if (!mr || !pauseSupported) return;
     if (paused) {
-      mediaRecorderRef.current.resume();
+      try { mr.resume(); } catch {}
       timerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000);
+      setPaused(false);
+      pausedRef.current = false;
     } else {
-      mediaRecorderRef.current.pause();
+      try { mr.pause(); } catch {}
       if (timerRef.current) clearInterval(timerRef.current);
+      setPaused(true);
+      pausedRef.current = true;
     }
-    setPaused(!paused);
   };
 
   const stopRecording = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    mediaRecorderRef.current?.stop();
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    try { mediaRecorderRef.current?.stop(); } catch {}
     setRecording(false);
     setPaused(false);
+    pausedRef.current = false;
     releaseWakeLock();
   };
 
-  const handleSubmit = async () => {
-    if (!audioBlob) return;
+  const handleSubmit = () => {
+    if (!audioBlob) {
+      setErrorMsg("녹음이 아직 준비되지 않았습니다. 잠시 후 다시 시도하세요.");
+      return;
+    }
     setProcessing(true);
+    setProgress(0);
+    setErrorMsg(null);
 
+    const ext = extOfMime(audioBlob.type);
     const formData = new FormData();
     formData.append(uploadField, String(entityId));
     formData.append("duration", String(elapsed));
-    formData.append("audio", audioBlob, "recording.webm");
+    formData.append("audio", audioBlob, `recording.${ext}`);
 
-    try {
-      const res = await fetch(uploadUrl, { method: "POST", body: formData });
-      if (!res.ok) {
-        const body = await res.text();
-        throw new Error(`${res.status}: ${body.slice(0, 200)}`);
-      }
-      onComplete();
-      onClose();
-    } catch (err) {
-      alert("업로드 실패: " + (err as Error).message);
-    } finally {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", uploadUrl);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
       setProcessing(false);
-    }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onComplete();
+        onClose();
+      } else {
+        setErrorMsg(`업로드 실패 (${xhr.status}): ${xhr.responseText?.slice(0, 200) || "서버 오류"}`);
+      }
+    };
+    xhr.onerror = () => {
+      setProcessing(false);
+      setErrorMsg("네트워크 오류로 업로드를 완료할 수 없습니다.");
+    };
+    xhr.ontimeout = () => {
+      setProcessing(false);
+      setErrorMsg("업로드 시간이 초과되었습니다.");
+    };
+    xhr.timeout = 5 * 60 * 1000;
+    xhr.send(formData);
   };
 
   const formatTime = (s: number) => {
@@ -248,21 +311,27 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold">{title}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={tryClose}>
+      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold truncate pr-2">{title}</h3>
+          <button onClick={tryClose} className="p-2 text-gray-400 active:text-gray-700" aria-label="닫기">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex flex-col items-center py-8">
+        {errorMsg && (
+          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3 break-words">
+            {errorMsg}
+          </div>
+        )}
+
+        <div className="flex flex-col items-center py-4">
           {!recording && !audioUrl && (
             <>
               <button
                 onClick={startRecording}
-                className="w-24 h-24 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center shadow-lg transition"
+                className="w-24 h-24 bg-red-500 active:bg-red-700 rounded-full flex items-center justify-center shadow-lg"
               >
                 <Mic className="w-10 h-10 text-white" />
               </button>
@@ -278,19 +347,21 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
               />
               <p className="mt-3 text-3xl font-mono font-bold">{formatTime(elapsed)}</p>
               <p className="text-sm text-gray-500">{paused ? "일시정지됨" : "녹음 중..."}</p>
-              <div className="flex gap-3 mt-4">
-                <button
-                  onClick={togglePause}
-                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center gap-2"
-                >
-                  {paused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
-                  {paused ? "재개" : "일시정지"}
-                </button>
+              <div className="flex gap-3 mt-4 w-full">
+                {pauseSupported && (
+                  <button
+                    onClick={togglePause}
+                    className="flex-1 min-h-[44px] px-4 py-3 bg-gray-100 active:bg-gray-300 rounded-lg flex items-center justify-center gap-2 font-medium"
+                  >
+                    {paused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
+                    {paused ? "재개" : "일시정지"}
+                  </button>
+                )}
                 <button
                   onClick={stopRecording}
-                  className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center gap-2"
+                  className="flex-1 min-h-[44px] px-4 py-3 bg-red-500 active:bg-red-700 text-white rounded-lg flex items-center justify-center gap-2 font-medium"
                 >
-                  <Square className="w-4 h-4" />
+                  <Square className="w-5 h-5" />
                   정지
                 </button>
               </div>
@@ -300,15 +371,28 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
           {audioUrl && !recording && (
             <>
               <p className="text-sm text-gray-500 mb-3">녹음 완료 ({formatTime(elapsed)})</p>
-              <audio controls src={audioUrl} className="w-full mb-6" />
+              <audio controls src={audioUrl} className="w-full mb-4" />
+              {processing && (
+                <div className="w-full mb-4">
+                  <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                    <span>업로드 중...</span>
+                    <span>{progress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-indigo-600 h-2 rounded-full transition-all" style={{ width: `${progress}%` }} />
+                  </div>
+                </div>
+              )}
               <div className="flex gap-3 w-full">
                 <button
                   onClick={() => {
                     setAudioUrl(null);
                     setAudioBlob(null);
                     setElapsed(0);
+                    setErrorMsg(null);
+                    setProgress(0);
                   }}
-                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                  className="flex-1 min-h-[44px] px-4 py-3 bg-gray-100 active:bg-gray-300 rounded-lg font-medium"
                   disabled={processing}
                 >
                   다시 녹음
@@ -316,12 +400,12 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
                 <button
                   onClick={handleSubmit}
                   disabled={processing}
-                  className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 min-h-[44px] px-4 py-3 bg-indigo-600 active:bg-indigo-800 text-white rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 font-medium"
                 >
                   {processing ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      일지 생성 중...
+                      업로드 중
                     </>
                   ) : (
                     "일지 생성"
