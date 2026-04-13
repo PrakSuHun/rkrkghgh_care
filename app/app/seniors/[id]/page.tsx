@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Mic, FileText, Loader2 } from "lucide-react";
+import { ArrowLeft, Mic, FileText, Loader2, Trash2 } from "lucide-react";
 import RecordingDialog from "../../components/RecordingDialog";
 
 export default function SeniorDetailPage() {
@@ -27,6 +27,13 @@ export default function SeniorDetailPage() {
     const interval = setInterval(load, 3000);
     return () => clearInterval(interval);
   }, [load]);
+
+  const deleteJournal = async (journalId: number) => {
+    if (!confirm("이 일지를 삭제할까요? (복구할 수 없습니다)")) return;
+    const res = await fetch(`/api/journals/${journalId}`, { method: "DELETE" });
+    if (!res.ok) { alert("삭제 실패"); return; }
+    load();
+  };
 
   if (loading) return <div className="p-6">로딩 중...</div>;
   if (!data?.senior) return <div className="p-6">어르신을 찾을 수 없습니다.</div>;
@@ -86,13 +93,22 @@ export default function SeniorDetailPage() {
           <div className="space-y-3">
             {journals.map((j: any) => (
               <div key={j.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <p className="text-xs text-gray-500">
+                <div className="flex justify-between items-center mb-2 gap-2">
+                  <p className="text-xs text-gray-500 min-w-0 truncate">
                     {new Date(j.created_at).toLocaleString("ko-KR")} · {Math.floor(j.duration / 60)}분 {j.duration % 60}초
                   </p>
-                  {j.status === "processing" && <span className="flex items-center gap-1 text-xs text-amber-600"><Loader2 className="w-3 h-3 animate-spin" /> 변환 중</span>}
-                  {j.status === "done" && <span className="text-xs text-green-600">완료</span>}
-                  {j.status === "failed" && <span className="text-xs text-red-600">실패</span>}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {j.status === "processing" && <span className="flex items-center gap-1 text-xs text-amber-600"><Loader2 className="w-3 h-3 animate-spin" /> 변환중</span>}
+                    {j.status === "done" && <span className="text-xs text-green-600">완료</span>}
+                    {j.status === "failed" && <span className="text-xs text-red-600">실패</span>}
+                    <button
+                      onClick={() => deleteJournal(j.id)}
+                      className="min-h-[32px] p-2 text-red-500 active:bg-red-50 rounded-lg"
+                      aria-label="삭제"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
                 {j.summary && (
                   <div className="mb-2">
