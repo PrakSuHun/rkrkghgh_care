@@ -22,6 +22,9 @@ export async function transcribeAndSummarize(
     audioPart,
   ]);
   const transcript = transcribeRes.response.text().trim();
+  if (!transcript) {
+    throw new Error("Gemini returned empty transcript (possibly blocked or silent audio)");
+  }
 
   const summaryPrompt =
     kind === "journal"
@@ -32,6 +35,9 @@ export async function transcribeAndSummarize(
     { text: `${summaryPrompt}\n\n---\n${transcript}` },
   ]);
   const summary = summaryRes.response.text().trim();
+  if (!summary) {
+    throw new Error("Gemini returned empty summary");
+  }
 
   return { transcript, summary };
 }

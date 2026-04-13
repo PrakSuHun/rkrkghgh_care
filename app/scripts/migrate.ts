@@ -111,9 +111,9 @@ async function migrateSeniors() {
   const rows: SeniorRow[] = [];
   for (const name of names) {
     rows.push({
-      name,
-      ...(recips.get(name) ?? { name }),
+      ...(recips.get(name) ?? {}),
       ...(assess.get(name) ?? {}),
+      name,
     });
   }
   console.log(`Upserting ${rows.length} seniors...`);

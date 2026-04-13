@@ -1,6 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { supabase, AUDIO_BUCKET } from "@/lib/supabase";
 import { transcribeAndSummarize } from "@/lib/transcribe";
+
+const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
+const ALLOWED_MIME = new Set([
+  "audio/webm",
+  "audio/ogg",
+  "audio/mpeg",
+  "audio/mp4",
+  "audio/wav",
+  "audio/x-wav",
+]);
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -28,10 +38,17 @@ export async function POST(req: Request) {
   if (!workerId || !audio) {
     return NextResponse.json({ error: "worker_id and audio required" }, { status: 400 });
   }
+  if (audio.size > MAX_AUDIO_BYTES) {
+    return NextResponse.json({ error: "audio too large (max 25MB)" }, { status: 413 });
+  }
+  const mimeType = audio.type || "audio/webm";
+  if (!ALLOWED_MIME.has(mimeType)) {
+    return NextResponse.json({ error: `unsupported mime type: ${mimeType}` }, { status: 415 });
+  }
 
   const buffer = Buffer.from(await audio.arrayBuffer());
-  const mimeType = audio.type || "audio/webm";
-  const filename = `counseling_${workerId}_${Date.now()}.webm`;
+  const ext = mimeType.split("/")[1]?.replace("x-", "") ?? "webm";
+  const filename = `counseling_${workerId}_${Date.now()}.${ext}`;
 
   const { error: upErr } = await supabase.storage
     .from(AUDIO_BUCKET)
@@ -46,20 +63,22 @@ export async function POST(req: Request) {
   if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
   const logId = inserted.id;
 
-  transcribeAndSummarize(buffer, mimeType, "counseling")
-    .then(async ({ transcript, summary }) => {
+  after(async () => {
+    try {
+      const { transcript, summary } = await transcribeAndSummarize(buffer, mimeType, "counseling");
       await supabase
         .from("counseling_logs")
         .update({ transcript, summary, status: "done" })
         .eq("id", logId);
-    })
-    .catch(async (err) => {
-      console.error("Transcription failed:", err);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("Transcription failed:", msg);
       await supabase
         .from("counseling_logs")
-        .update({ status: "failed", transcript: `변환 실패: ${err.message}` })
+        .update({ status: "failed", transcript: `변환 실패: ${msg}` })
         .eq("id", logId);
-    });
+    }
+  });
 
   return NextResponse.json({ id: logId, status: "processing" });
 }
