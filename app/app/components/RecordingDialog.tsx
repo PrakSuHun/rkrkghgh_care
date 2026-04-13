@@ -46,6 +46,18 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
   const rafRef = useRef<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pausedRef = useRef(false);
+  const audioElRef = useRef<HTMLAudioElement | null>(null);
+
+  const fixAudioDuration = (el: HTMLAudioElement) => {
+    if (el.duration === Infinity || isNaN(el.duration)) {
+      const onTimeUpdate = () => {
+        el.currentTime = 0;
+        el.removeEventListener("timeupdate", onTimeUpdate);
+      };
+      el.addEventListener("timeupdate", onTimeUpdate);
+      el.currentTime = 1e101;
+    }
+  };
 
   const acquireWakeLock = async () => {
     try {
@@ -405,7 +417,14 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
           {audioUrl && !recording && (
             <>
               <p className="text-sm text-gray-500 mb-3">녹음 완료 ({formatTime(elapsed)})</p>
-              <audio controls src={audioUrl} className="w-full mb-4" />
+              <audio
+                ref={audioElRef}
+                controls
+                src={audioUrl}
+                preload="metadata"
+                onLoadedMetadata={(e) => fixAudioDuration(e.currentTarget)}
+                className="w-full mb-4"
+              />
               {processing && (
                 <div className="w-full mb-4">
                   <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
