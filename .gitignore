@@ -31,6 +31,9 @@ npm-debug.log*
 ._*
 .DS_Store
 
+# Claude local state
+.claude/
+
 # IDE
 .vscode/
 .idea/
