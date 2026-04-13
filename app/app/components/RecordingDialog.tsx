@@ -63,7 +63,17 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
   };
 
   useEffect(() => {
-    if (!open) cleanup();
+    // 업로드 중이면 강제 닫기에도 blob 보존
+    if (!open && !processing) cleanup();
+  }, [open, processing]);
+
+  // 모달 열려있는 동안 body 스크롤 잠금
+  useEffect(() => {
+    if (open) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = prev; };
+    }
   }, [open]);
 
   // 화면 가시성 복귀 시 Wake Lock 재획득
@@ -261,8 +271,9 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
     releaseWakeLock();
   };
 
-  const handleSubmit = () => {
-    if (!audioBlob) {
+  const handleSubmit = async () => {
+    const blob = audioBlob;
+    if (!blob) {
       setErrorMsg("녹음이 아직 준비되지 않았습니다. 잠시 후 다시 시도하세요.");
       return;
     }
@@ -270,36 +281,59 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
     setProgress(0);
     setErrorMsg(null);
 
-    const ext = extOfMime(audioBlob.type);
-    const formData = new FormData();
-    formData.append(uploadField, String(entityId));
-    formData.append("duration", String(elapsed));
-    formData.append("audio", audioBlob, `recording.${ext}`);
+    const ext = extOfMime(blob.type);
+    const path = `${uploadField === "senior_id" ? "journal" : "counseling"}_${entityId}_${Date.now()}.${ext}`;
 
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", uploadUrl);
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
-    };
-    xhr.onload = () => {
-      setProcessing(false);
-      if (xhr.status >= 200 && xhr.status < 300) {
-        onComplete();
-        onClose();
-      } else {
-        setErrorMsg(`업로드 실패 (${xhr.status}): ${xhr.responseText?.slice(0, 200) || "서버 오류"}`);
+    try {
+      // 1) 서명 업로드 URL 발급
+      const urlRes = await fetch("/api/upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path }),
+      });
+      if (!urlRes.ok) throw new Error(`업로드 URL 발급 실패 (${urlRes.status})`);
+      const { signedUrl } = await urlRes.json();
+
+      // 2) Supabase Storage로 직접 업로드 (Vercel 4.5MB 본문 한계 우회)
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", signedUrl);
+        xhr.setRequestHeader("Content-Type", blob.type || "audio/webm");
+        xhr.setRequestHeader("x-upsert", "true");
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
+        };
+        xhr.onload = () => xhr.status >= 200 && xhr.status < 300
+          ? resolve()
+          : reject(new Error(`Storage 업로드 실패 (${xhr.status}): ${xhr.responseText?.slice(0, 150)}`));
+        xhr.onerror = () => reject(new Error("네트워크 오류로 업로드 실패"));
+        xhr.ontimeout = () => reject(new Error("업로드 시간 초과"));
+        xhr.timeout = 10 * 60 * 1000;
+        xhr.send(blob);
+      });
+
+      // 3) 메타데이터 등록 → AI 변환 트리거
+      const metaRes = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          [uploadField]: entityId,
+          duration: elapsed,
+          audio_path: path,
+          mime_type: blob.type,
+        }),
+      });
+      if (!metaRes.ok) {
+        const text = await metaRes.text();
+        throw new Error(`등록 실패 (${metaRes.status}): ${text.slice(0, 200)}`);
       }
-    };
-    xhr.onerror = () => {
+      onComplete();
+      onClose();
+    } catch (err) {
+      setErrorMsg((err as Error).message);
+    } finally {
       setProcessing(false);
-      setErrorMsg("네트워크 오류로 업로드를 완료할 수 없습니다.");
-    };
-    xhr.ontimeout = () => {
-      setProcessing(false);
-      setErrorMsg("업로드 시간이 초과되었습니다.");
-    };
-    xhr.timeout = 5 * 60 * 1000;
-    xhr.send(formData);
+    }
   };
 
   const formatTime = (s: number) => {

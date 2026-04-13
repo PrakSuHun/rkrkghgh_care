@@ -47,7 +47,7 @@ export default function TopNav() {
       {/* 하단 탭바 (모든 화면 크기에서 사용) */}
       {pathname !== "/login" && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-40 pb-safe">
-          <div className="grid grid-cols-5 max-w-md mx-auto">
+          <div className="grid grid-cols-5">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const active = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);

@@ -66,28 +66,30 @@ export default function SeniorSummaryCard({ senior, onUpdated }: { senior: Recor
 
   return (
     <div className="bg-white border rounded-2xl p-4 space-y-3">
-      <div className="flex items-center justify-between sticky top-14 bg-white pb-2 border-b z-10">
-        <div>
-          <h2 className="text-lg font-bold">{senior.name}</h2>
-          <p className="text-xs text-gray-500">
-            {senior.grade ?? "등급-"} · {senior.long_term_care_id ?? ""}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={regenerate}
-            disabled={regen}
-            className="px-3 py-2 bg-gray-100 active:bg-gray-200 rounded-lg text-sm inline-flex items-center gap-1 disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${regen ? "animate-spin" : ""}`} />
-            {regen ? "갱신중" : "AI 갱신"}
-          </button>
-          <button
-            onClick={copyAll}
-            className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium active:bg-indigo-800"
-          >
-            {copied === "all" ? "✓ 전체 복사됨" : "전체 복사"}
-          </button>
+      <div className="sticky top-14 bg-white pb-2 border-b z-10 space-y-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold truncate">{senior.name}</h2>
+            <p className="text-xs text-gray-500 truncate">
+              {senior.grade ?? "등급-"} · {senior.long_term_care_id ?? ""}
+            </p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={regenerate}
+              disabled={regen}
+              className="min-h-[40px] px-3 py-2 bg-gray-100 active:bg-gray-300 rounded-lg text-sm inline-flex items-center gap-1 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${regen ? "animate-spin" : ""}`} />
+              {regen ? "갱신중" : "AI 갱신"}
+            </button>
+            <button
+              onClick={copyAll}
+              className="min-h-[40px] px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium active:bg-indigo-800"
+            >
+              {copied === "all" ? "✓ 전체 복사됨" : "전체 복사"}
+            </button>
+          </div>
         </div>
       </div>
 

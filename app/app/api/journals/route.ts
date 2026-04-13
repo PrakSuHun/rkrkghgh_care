@@ -2,6 +2,8 @@ import { NextResponse, after } from "next/server";
 import { supabase, AUDIO_BUCKET } from "@/lib/supabase";
 import { transcribeAndSummarize } from "@/lib/transcribe";
 
+export const maxDuration = 300;
+
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024; // 25MB
 const ALLOWED_MIME = new Set([
   "audio/webm",
@@ -35,30 +37,55 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const formData = await req.formData();
-  const seniorId = Number(formData.get("senior_id"));
-  const duration = Number(formData.get("duration") ?? 0);
-  const audio = formData.get("audio") as File | null;
+  const ct = req.headers.get("content-type") ?? "";
+  let seniorId = 0;
+  let duration = 0;
+  let mimeType = "audio/webm";
+  let buffer: Buffer | null = null;
+  let filename = "";
 
-  if (!seniorId || !audio) {
-    return NextResponse.json({ error: "senior_id and audio required" }, { status: 400 });
-  }
-  if (audio.size > MAX_AUDIO_BYTES) {
-    return NextResponse.json({ error: "audio too large (max 25MB)" }, { status: 413 });
-  }
-  const mimeType = (audio.type || "audio/webm").split(";")[0].trim().toLowerCase();
-  if (!ALLOWED_MIME.has(mimeType)) {
-    return NextResponse.json({ error: `unsupported mime type: ${audio.type}` }, { status: 415 });
-  }
+  if (ct.includes("application/json")) {
+    // 직접 업로드 모드: 클라이언트가 이미 Storage에 올린 경로 전달
+    const body = await req.json();
+    seniorId = Number(body.senior_id);
+    duration = Number(body.duration ?? 0);
+    filename = String(body.audio_path ?? "");
+    mimeType = (String(body.mime_type ?? "audio/webm")).split(";")[0].trim().toLowerCase();
+    if (!seniorId || !filename) {
+      return NextResponse.json({ error: "senior_id and audio_path required" }, { status: 400 });
+    }
+    if (!ALLOWED_MIME.has(mimeType)) {
+      return NextResponse.json({ error: `unsupported mime type: ${mimeType}` }, { status: 415 });
+    }
+    const { data, error } = await supabase.storage.from(AUDIO_BUCKET).download(filename);
+    if (error || !data) return NextResponse.json({ error: error?.message ?? "audio not found" }, { status: 404 });
+    buffer = Buffer.from(await data.arrayBuffer());
+  } else {
+    const formData = await req.formData();
+    seniorId = Number(formData.get("senior_id"));
+    duration = Number(formData.get("duration") ?? 0);
+    const audio = formData.get("audio") as File | null;
 
-  const buffer = Buffer.from(await audio.arrayBuffer());
-  const ext = mimeType.split("/")[1]?.replace("x-", "").replace(/[^a-z0-9]/g, "") || "webm";
-  const filename = `journal_${seniorId}_${Date.now()}.${ext}`;
+    if (!seniorId || !audio) {
+      return NextResponse.json({ error: "senior_id and audio required" }, { status: 400 });
+    }
+    if (audio.size > MAX_AUDIO_BYTES) {
+      return NextResponse.json({ error: "audio too large (max 25MB)" }, { status: 413 });
+    }
+    mimeType = (audio.type || "audio/webm").split(";")[0].trim().toLowerCase();
+    if (!ALLOWED_MIME.has(mimeType)) {
+      return NextResponse.json({ error: `unsupported mime type: ${audio.type}` }, { status: 415 });
+    }
 
-  const { error: upErr } = await supabase.storage
-    .from(AUDIO_BUCKET)
-    .upload(filename, buffer, { contentType: mimeType, upsert: false });
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+    buffer = Buffer.from(await audio.arrayBuffer());
+    const ext = mimeType.split("/")[1]?.replace("x-", "").replace(/[^a-z0-9]/g, "") || "webm";
+    filename = `journal_${seniorId}_${Date.now()}.${ext}`;
+
+    const { error: upErr } = await supabase.storage
+      .from(AUDIO_BUCKET)
+      .upload(filename, buffer, { contentType: mimeType, upsert: false });
+    if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+  }
 
   const { data: inserted, error: insErr } = await supabase
     .from("journals")
@@ -83,18 +110,19 @@ export async function POST(req: Request) {
     .select("name")
     .eq("id", seniorId)
     .single();
-  const knownNames = [
+  const knownNames = Array.from(new Set([
     ...(allSeniors ?? []).map((r: any) => r.name),
     ...(allCaregivers ?? []).map((r: any) => r.name),
-  ];
-  const preferredNames = [
+  ]));
+  const preferredNames = Array.from(new Set([
     ...(thisSenior ? [thisSenior.name] : []),
     ...(assigned ?? []).map((a: any) => a.caregivers?.name).filter(Boolean),
-  ];
+  ]));
 
+  const audioBuf = buffer!;
   after(async () => {
     try {
-      const { transcript, summary } = await transcribeAndSummarize(buffer, mimeType, "journal", {
+      const { transcript, summary } = await transcribeAndSummarize(audioBuf, mimeType, "journal", {
         knownNames,
         preferredNames,
       });

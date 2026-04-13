@@ -38,7 +38,7 @@ function LoginForm() {
         placeholder="아이디"
         value={user}
         onChange={(e) => setUser(e.target.value)}
-        className="w-full border rounded-lg px-3 py-2"
+        className="w-full border rounded-lg px-3 py-3 text-base"
         required
       />
       <input
@@ -47,7 +47,7 @@ function LoginForm() {
         placeholder="비밀번호"
         value={pass}
         onChange={(e) => setPass(e.target.value)}
-        className="w-full border rounded-lg px-3 py-2"
+        className="w-full border rounded-lg px-3 py-3 text-base"
         required
       />
       {err && <p className="text-sm text-red-600">{err}</p>}

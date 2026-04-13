@@ -101,35 +101,26 @@ export default function WorkersPage() {
         <div className="space-y-3">
           {caregivers.map((c) => (
             <Link key={c.id} href={`/workers/${c.id}`}>
-              <div className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-sm">
-                      {c.name.charAt(0)}
+              <div className="bg-white border rounded-xl p-4 hover:shadow-md transition cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-sm shrink-0">
+                    {c.name.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold">{c.name}</span>
+                      {c.gender && <span className="text-xs text-gray-500">{c.gender === "M" ? "남" : "여"}</span>}
+                      {c.status === "resigned" && (
+                        <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">퇴사</span>
+                      )}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-900">{c.name}</span>
-                        {c.gender && (
-                          <span className="text-xs text-gray-500">{c.gender === "M" ? "남" : "여"}</span>
-                        )}
-                        {c.status === "resigned" && (
-                          <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">퇴사</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                        {c.phone && (
-                          <span className="flex items-center gap-1">
-                            <Phone className="w-3 h-3" />
-                            {c.phone}
-                          </span>
-                        )}
-                        <span>담당 어르신 {c.activeRecipientCount}명</span>
-                        {c.lastCounselingDate && <span>최근 상담: {c.lastCounselingDate}</span>}
-                      </div>
+                    <div className="mt-0.5 text-xs text-gray-500 truncate">
+                      {c.phone && <span className="inline-flex items-center gap-0.5"><Phone className="w-3 h-3" />{c.phone} · </span>}
+                      담당 {c.activeRecipientCount}명
+                      {c.lastCounselingDate && <span> · 상담 {c.lastCounselingDate}</span>}
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-300" />
+                  <ChevronRight className="w-5 h-5 text-gray-300 shrink-0" />
                 </div>
               </div>
             </Link>
