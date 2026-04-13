@@ -65,10 +65,40 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
     chunksRef.current = [];
   };
 
+  const pickMimeType = (): string => {
+    if (typeof MediaRecorder === "undefined") return "";
+    const candidates = [
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/mp4",
+      "audio/mpeg",
+      "audio/ogg;codecs=opus",
+      "audio/ogg",
+      "audio/wav",
+    ];
+    for (const t of candidates) {
+      try {
+        if (MediaRecorder.isTypeSupported(t)) return t;
+      } catch {}
+    }
+    return "";
+  };
+
   const startRecording = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert("이 브라우저에서는 녹음이 지원되지 않습니다. 최신 크롬/삼성인터넷/사파리를 사용해주세요.");
+      return;
+    }
+    if (typeof MediaRecorder === "undefined") {
+      alert("이 브라우저는 녹음 기능을 지원하지 않습니다.");
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const chosen = pickMimeType();
+      const mediaRecorder = chosen
+        ? new MediaRecorder(stream, { mimeType: chosen })
+        : new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
@@ -77,10 +107,16 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const type = mediaRecorder.mimeType || chosen || "audio/webm";
+        const blob = new Blob(chunksRef.current, { type });
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach((t) => t.stop());
+      };
+
+      mediaRecorder.onerror = (e: Event) => {
+        const err = (e as any).error;
+        alert("녹음 중 오류: " + (err?.message ?? err?.name ?? "알 수 없음"));
       };
 
       mediaRecorder.start();
@@ -92,7 +128,14 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
         setElapsed((e) => e + 1);
       }, 1000);
     } catch (err) {
-      alert("마이크 권한이 필요합니다: " + (err as Error).message);
+      const name = (err as Error).name;
+      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+        alert("마이크 권한이 거부되었습니다. 브라우저 설정에서 허용해주세요.");
+      } else if (name === "NotFoundError") {
+        alert("사용 가능한 마이크를 찾을 수 없습니다.");
+      } else {
+        alert("녹음 시작 실패: " + (err as Error).message);
+      }
     }
   };
 
@@ -127,7 +170,10 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
 
     try {
       const res = await fetch(uploadUrl, { method: "POST", body: formData });
-      if (!res.ok) throw new Error("업로드 실패");
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`${res.status}: ${body.slice(0, 200)}`);
+      }
       onComplete();
       onClose();
     } catch (err) {

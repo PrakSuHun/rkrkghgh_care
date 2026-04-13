@@ -46,13 +46,14 @@ export async function POST(req: Request) {
   if (audio.size > MAX_AUDIO_BYTES) {
     return NextResponse.json({ error: "audio too large (max 25MB)" }, { status: 413 });
   }
-  const mimeType = audio.type || "audio/webm";
-  if (!ALLOWED_MIME.has(mimeType)) {
-    return NextResponse.json({ error: `unsupported mime type: ${mimeType}` }, { status: 415 });
+  const mimeType = (audio.type || "audio/webm").split(";")[0].trim();
+  const baseMime = mimeType.toLowerCase();
+  if (!baseMime.startsWith("audio/")) {
+    return NextResponse.json({ error: `unsupported mime type: ${audio.type}` }, { status: 415 });
   }
 
   const buffer = Buffer.from(await audio.arrayBuffer());
-  const ext = mimeType.split("/")[1]?.replace("x-", "") ?? "webm";
+  const ext = baseMime.split("/")[1]?.replace("x-", "").replace(/[^a-z0-9]/g, "") || "webm";
   const filename = `journal_${seniorId}_${Date.now()}.${ext}`;
 
   const { error: upErr } = await supabase.storage
