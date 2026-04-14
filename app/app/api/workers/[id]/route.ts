@@ -26,7 +26,18 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body = await req.json();
+  if (body.status === "resigned" && !body.terminated_at) {
+    body.terminated_at = new Date().toISOString().slice(0, 10);
+  }
+  if (body.status === "active") body.terminated_at = null;
   const { error } = await supabase.from("caregivers").update(body).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (body.status && body.status !== "active") {
+    await supabase
+      .from("caregiver_assignments")
+      .update({ status: "ended", end_date: new Date().toISOString().slice(0, 10) })
+      .eq("caregiver_id", id)
+      .eq("status", "active");
+  }
   return NextResponse.json({ ok: true });
 }

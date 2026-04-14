@@ -69,6 +69,19 @@ export default function SeniorDetailPage() {
     load();
   };
 
+  const toggleStatus = async () => {
+    const cur = data?.senior?.status ?? "active";
+    const next = cur === "active" ? "inactive" : "active";
+    const msg = next === "active" ? "활성 상태로 전환할까요?" : "비활성 처리할까요? (담당 배정도 모두 종료됩니다)";
+    if (!confirm(msg)) return;
+    const res = await fetch(`/api/seniors/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: next }),
+    });
+    if (!res.ok) { alert("상태 변경 실패"); return; }
+    load();
+  };
+
   const deleteJournal = async (journalId: number) => {
     if (!confirm("이 일지를 삭제할까요? (복구할 수 없습니다)")) return;
     const res = await fetch(`/api/journals/${journalId}`, { method: "DELETE" });
@@ -97,14 +110,27 @@ export default function SeniorDetailPage() {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="min-w-0">
             <h1 className="text-xl font-bold text-gray-900 truncate">{s.name}</h1>
-            <p className="text-xs text-gray-500 mt-0.5">{s.grade ?? "등급-"}</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {s.grade ?? "등급-"}
+              <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${s.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-200 text-gray-600"}`}>
+                {s.status === "active" ? "활성" : "비활성"}
+              </span>
+            </p>
           </div>
-          <button
-            onClick={() => setRecordOpen(true)}
-            className="min-h-[44px] inline-flex items-center px-4 py-2 bg-indigo-600 active:bg-indigo-800 text-white rounded-lg font-medium"
-          >
-            <Mic className="w-4 h-4 mr-2" /> 녹음 시작
-          </button>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={toggleStatus}
+              className={`min-h-[44px] inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium ${s.status === "active" ? "bg-gray-100 active:bg-gray-300 text-gray-700" : "bg-green-600 text-white active:bg-green-800"}`}
+            >
+              {s.status === "active" ? "비활성" : "활성화"}
+            </button>
+            <button
+              onClick={() => setRecordOpen(true)}
+              className="min-h-[44px] inline-flex items-center px-4 py-2 bg-indigo-600 active:bg-indigo-800 text-white rounded-lg font-medium"
+            >
+              <Mic className="w-4 h-4 mr-2" /> 녹음
+            </button>
+          </div>
         </div>
 
         <div className="mt-3">

@@ -36,5 +36,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const body = await req.json();
   const { error } = await supabase.from("seniors").update(body).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (body.status && body.status !== "active") {
+    await supabase
+      .from("caregiver_assignments")
+      .update({ status: "ended", end_date: new Date().toISOString().slice(0, 10) })
+      .eq("senior_id", id)
+      .eq("status", "active");
+  }
   return NextResponse.json({ ok: true });
 }
