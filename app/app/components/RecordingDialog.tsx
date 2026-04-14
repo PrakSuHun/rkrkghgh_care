@@ -88,6 +88,16 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
     }
   }, [open]);
 
+  // 녹음 시작 후 canvas가 mount된 뒤 파형 루프 시작
+  useEffect(() => {
+    if (!recording) return;
+    if (!analyserRef.current || !canvasRef.current) return;
+    rafRef.current = requestAnimationFrame(drawWaveform);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [recording]);
+
   // 화면 가시성 복귀 시 Wake Lock 재획득
   useEffect(() => {
     function onVisChange() {
@@ -232,7 +242,6 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
         source.connect(analyser);
         audioCtxRef.current = audioCtx;
         analyserRef.current = analyser;
-        requestAnimationFrame(drawWaveform);
       } catch {}
 
       mediaRecorder.start();
