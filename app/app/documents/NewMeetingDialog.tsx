@@ -71,7 +71,7 @@ export default function NewMeetingDialog({ open, onClose }: { open: boolean; onC
       if (!res.ok) throw new Error(j.error || "작성 실패");
       invalidate("/api/meetings");
       onClose();
-      router.push(`/documents/${j.meeting.id}`);
+      router.push(`/documents/meeting/${j.meeting.id}`);
     } catch (e: any) {
       setErr(e.message);
     } finally {

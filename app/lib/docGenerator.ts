@@ -82,11 +82,26 @@ const ASSESS_FIELDS = [
   ["assess_summary", "종합의견"],
 ] as const;
 
-function monthRange(month: string) {
+function monthRange(month: string | undefined) {
+  if (!month || !/^\d{4}-\d{2}$/.test(month)) throw new Error("년월(YYYY-MM)이 필요합니다");
   const [y, m] = month.split("-").map(Number);
   const start = new Date(Date.UTC(y, m - 1, 1)).toISOString().slice(0, 10);
   const end = new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10);
   return { start, end };
+}
+
+function requireSenior(s: any): asserts s {
+  if (!s) throw new Error("어르신을 찾을 수 없습니다");
+}
+function requireWorker(w: any): asserts w {
+  if (!w) throw new Error("요양보호사를 찾을 수 없습니다");
+}
+
+function safeParseJSON(raw: string): any {
+  try { return JSON.parse(raw.replace(/^```json\s*/, "").replace(/```\s*$/, "")); } catch {}
+  const m = raw.match(/\{[\s\S]*\}/);
+  if (m) { try { return JSON.parse(m[0]); } catch (e) { console.error("AI JSON parse failed:", e, raw.slice(0, 500)); } }
+  throw new Error("AI 응답 파싱 실패 — 다시 시도해주세요");
 }
 
 async function loadSenior(id: number) {
@@ -113,7 +128,7 @@ export async function generateDocument(
   switch (type) {
     case "needs_assessment": {
       const s = await loadSenior(params.seniorId!);
-      if (!s) throw new Error("어르신 없음");
+      requireSenior(s);
       return {
         title: "욕구사정지",
         subtitle: s.name,
@@ -130,7 +145,7 @@ export async function generateDocument(
 
     case "care_plan": {
       const s = await loadSenior(params.seniorId!);
-      if (!s) throw new Error("어르신 없음");
+      requireSenior(s);
       const cgs = await loadCaregivers(s.id);
       const cgNames = cgs.map((c: any) => c.caregivers?.name).filter(Boolean).join(", ") || "미배정";
       const assessText = ASSESS_FIELDS.map(([k, l]) => `${l}: ${s[k] ?? "-"}`).join("\n");
@@ -143,7 +158,7 @@ export async function generateDocument(
 욕구사정 요약:
 ${assessText}
 위 데이터 근거로만 작성. 없는 사실 창작 금지.`);
-      let p: any = {}; try { p = JSON.parse(ai.replace(/^```json\s*/, "").replace(/```\s*$/, "")); } catch {}
+      const p = safeParseJSON(ai);
       return {
         title: "급여제공계획서",
         subtitle: s.name,
@@ -165,7 +180,8 @@ ${assessText}
 
     case "monthly_status": {
       const s = await loadSenior(params.seniorId!);
-      const { start, end } = monthRange(params.month!);
+      requireSenior(s);
+      const { start, end } = monthRange(params.month);
       const { data: journals } = await supabase
         .from("journals")
         .select("created_at, summary, transcript")
@@ -181,7 +197,7 @@ ${assessText}
 ${list || "(이달 일지 없음)"}
 아래 JSON 스키마로만 응답:
 {"overall":"이달 전반 상태 요약 3~4줄","changes":"전달 대비 변화점","issues":"특이사항 및 이슈","next":"다음달 돌봄 방향"}`);
-      let p: any = {}; try { p = JSON.parse(ai.replace(/^```json\s*/, "").replace(/```\s*$/, "")); } catch {}
+      const p = safeParseJSON(ai);
       return {
         title: "월간 상태기록지",
         subtitle: `${s!.name} · ${params.month}`,
@@ -201,7 +217,8 @@ ${list || "(이달 일지 없음)"}
 
     case "service_record": {
       const s = await loadSenior(params.seniorId!);
-      const { start, end } = monthRange(params.month!);
+      requireSenior(s);
+      const { start, end } = monthRange(params.month);
       const { data: journals } = await supabase
         .from("journals")
         .select("created_at, duration, summary")
@@ -227,7 +244,8 @@ ${list || "(이달 일지 없음)"}
 
     case "senior_handover": {
       const s = await loadSenior(params.seniorId!);
-      const cgs = await loadCaregivers(s!.id);
+      requireSenior(s);
+      const cgs = await loadCaregivers(s.id);
       const cgNames = cgs.map((c: any) => c.caregivers?.name).filter(Boolean).join(", ") || "미배정";
       return {
         title: "수급자 인수인계서",
@@ -254,7 +272,8 @@ ${list || "(이달 일지 없음)"}
 
     case "monthly_counseling": {
       const w = await loadWorker(params.workerId!);
-      const { start, end } = monthRange(params.month!);
+      requireWorker(w);
+      const { start, end } = monthRange(params.month);
       const { data: logs } = await supabase
         .from("counseling_logs")
         .select("created_at, duration, summary, transcript")
@@ -270,7 +289,7 @@ ${list || "(이달 일지 없음)"}
 ${list || "(이달 상담 없음)"}
 JSON 스키마로만 응답:
 {"overall":"이달 전반 상담 요약","issues":"특이사항/건의사항","followup":"다음달 조치"}`);
-      let p: any = {}; try { p = JSON.parse(ai.replace(/^```json\s*/, "").replace(/```\s*$/, "")); } catch {}
+      const p = safeParseJSON(ai);
       return {
         title: "상담일지 월간보고",
         subtitle: `${w!.name} · ${params.month}`,
@@ -289,7 +308,8 @@ JSON 스키마로만 응답:
 
     case "service_contract": {
       const s = await loadSenior(params.seniorId!);
-      const cgs = await loadCaregivers(s!.id);
+      requireSenior(s);
+      const cgs = await loadCaregivers(s.id);
       const primary = cgs[0]?.caregivers as any;
       return {
         title: "서비스제공 계약서",
@@ -315,7 +335,8 @@ JSON 스키마로만 응답:
 
     case "monthly_work_report": {
       const w = await loadWorker(params.workerId!);
-      const { start, end } = monthRange(params.month!);
+      requireWorker(w);
+      const { start, end } = monthRange(params.month);
       const { data: assign } = await supabase
         .from("caregiver_assignments")
         .select("senior_id, seniors(name)")

@@ -3,11 +3,28 @@ import { generateDocument, DocType, DOC_TYPE_LABEL } from "@/lib/docGenerator";
 
 export const maxDuration = 120;
 
+const NEEDS: Record<DocType, { senior?: boolean; worker?: boolean; month?: boolean }> = {
+  needs_assessment: { senior: true },
+  care_plan: { senior: true },
+  monthly_status: { senior: true, month: true },
+  service_record: { senior: true, month: true },
+  senior_handover: { senior: true },
+  monthly_counseling: { worker: true, month: true },
+  service_contract: { senior: true },
+  monthly_work_report: { worker: true, month: true },
+};
+
 export async function POST(req: Request) {
   const body = await req.json();
   const type = body.type as DocType;
   if (!type || !DOC_TYPE_LABEL[type]) {
     return NextResponse.json({ error: "type 필요" }, { status: 400 });
+  }
+  const need = NEEDS[type];
+  if (need.senior && !body.senior_id) return NextResponse.json({ error: "senior_id 필요" }, { status: 400 });
+  if (need.worker && !body.worker_id) return NextResponse.json({ error: "worker_id 필요" }, { status: 400 });
+  if (need.month && !/^\d{4}-\d{2}$/.test(String(body.month ?? ""))) {
+    return NextResponse.json({ error: "month(YYYY-MM) 필요" }, { status: 400 });
   }
   try {
     const doc = await generateDocument(type, {

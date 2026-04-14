@@ -102,8 +102,11 @@ export default function PreviewPage() {
     <>
       <div className="no-print px-4 py-3 sm:p-6 max-w-3xl mx-auto">
         <div className="flex items-center justify-between gap-2 mb-3">
-          <button onClick={() => router.back()} className="inline-flex items-center text-sm text-gray-600">
-            <ArrowLeft className="w-4 h-4 mr-1" /> 뒤로
+          <button
+            onClick={() => { if (window.history.length > 1) router.back(); else router.push("/documents"); }}
+            className="inline-flex items-center text-sm text-gray-600"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" /> 서류 목록
           </button>
           <div className="flex gap-2">
             <button onClick={copy} className="min-h-[40px] px-3 py-2 bg-gray-100 active:bg-gray-300 rounded-lg text-sm inline-flex items-center gap-1">
