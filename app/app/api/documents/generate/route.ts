@@ -31,6 +31,8 @@ export async function POST(req: Request) {
       seniorId: body.senior_id ? Number(body.senior_id) : undefined,
       workerId: body.worker_id ? Number(body.worker_id) : undefined,
       month: body.month,
+      fromWorkerId: body.from_worker_id ? Number(body.from_worker_id) : undefined,
+      toWorkerId: body.to_worker_id ? Number(body.to_worker_id) : undefined,
     });
     return NextResponse.json({ doc });
   } catch (e: any) {
