@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import Link from "next/link";
 import { Plus, Search, User, ChevronRight } from "lucide-react";
 
@@ -50,30 +51,17 @@ function age(birth: string | null): string {
 }
 
 export default function SeniorsPage() {
-  const [seniors, setSeniors] = useState<Senior[]>([]);
-  const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("active");
-  const [loading, setLoading] = useState(true);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (search) params.set("search", search);
-    if (statusFilter) params.set("status", statusFilter);
-    const res = await fetch(`/api/seniors?${params}`);
-    if (res.ok) {
-      const j = await res.json();
-      setSeniors(j.data ?? []);
-      setTotal(j.total ?? 0);
-    }
-    setLoading(false);
-  }, [search, statusFilter]);
-
-  useEffect(() => {
-    const t = setTimeout(fetchData, 300);
-    return () => clearTimeout(t);
-  }, [fetchData]);
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  if (statusFilter) params.set("status", statusFilter);
+  const key = `/api/seniors?${params}`;
+  const { data, isLoading } = useSWR<{ data: Senior[]; total: number }>(key, { keepPreviousData: true });
+  const seniors = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const loading = isLoading;
 
   return (
     <div className="px-4 py-4 sm:p-6 max-w-4xl mx-auto space-y-4">

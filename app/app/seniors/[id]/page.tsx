@@ -1,7 +1,8 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import Link from "next/link";
 import { ArrowLeft, Mic, FileText, Loader2, Trash2, Repeat, Plus, X } from "lucide-react";
 import RecordingDialog from "../../components/RecordingDialog";
@@ -12,27 +13,16 @@ export default function SeniorDetailPage() {
   const params = useParams();
   const id = params.id as string;
   const [recordOpen, setRecordOpen] = useState(false);
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [swapFor, setSwapFor] = useState<any | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [allWorkers, setAllWorkers] = useState<Worker[]>([]);
   const [pickerSearch, setPickerSearch] = useState("");
 
-  const load = useCallback(async () => {
-    const res = await fetch(`/api/seniors/${id}`);
-    if (res.ok) setData(await res.json());
-    setLoading(false);
-  }, [id]);
-
-  useEffect(() => { load(); }, [load]);
-
-  const hasProcessing = (data?.journals ?? []).some((j: any) => j.status === "processing");
-  useEffect(() => {
-    if (!hasProcessing) return;
-    const interval = setInterval(load, 3000);
-    return () => clearInterval(interval);
-  }, [hasProcessing, load]);
+  const { data, mutate, isLoading } = useSWR<any>(`/api/seniors/${id}`, {
+    refreshInterval: (d: any) => (d?.journals ?? []).some((j: any) => j.status === "processing") ? 3000 : 0,
+  });
+  const loading = isLoading;
+  const load = () => mutate();
 
   const openPicker = async (mode: "add" | any) => {
     if (mode === "add") setAddOpen(true);

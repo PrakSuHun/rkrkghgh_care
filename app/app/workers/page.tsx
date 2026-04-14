@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import Link from "next/link";
 import { Plus, Search, UserCheck, ChevronRight, Phone } from "lucide-react";
 
@@ -18,36 +19,19 @@ interface Caregiver {
 }
 
 export default function WorkersPage() {
-  const [caregivers, setCaregivers] = useState<Caregiver[]>([]);
-  const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("active");
-  const [loading, setLoading] = useState(true);
 
-  const fetchCaregivers = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (search) params.set("search", search);
-      if (statusFilter) params.set("status", statusFilter);
-
-      const res = await fetch(`/api/workers?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        setCaregivers(data.caregivers ?? []);
-        setTotal(data.total ?? 0);
-      }
-    } catch (err) {
-      console.error("요양보호사 목록 로딩 실패:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [search, statusFilter]);
-
-  useEffect(() => {
-    const debounce = setTimeout(fetchCaregivers, 300);
-    return () => clearTimeout(debounce);
-  }, [fetchCaregivers]);
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  if (statusFilter) params.set("status", statusFilter);
+  const { data, isLoading } = useSWR<{ caregivers: Caregiver[]; total: number }>(
+    `/api/workers?${params.toString()}`,
+    { keepPreviousData: true }
+  );
+  const caregivers = data?.caregivers ?? [];
+  const total = data?.total ?? 0;
+  const loading = isLoading;
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">

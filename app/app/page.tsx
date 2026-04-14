@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import { Mic, MessageSquare, Search, X } from "lucide-react";
 import QuickRecordCard from "./components/QuickRecordCard";
 import SeniorSummaryCard from "./components/SeniorSummaryCard";
@@ -9,13 +10,10 @@ export default function DashboardPage() {
   const [openSenior, setOpenSenior] = useState(false);
   const [openWorker, setOpenWorker] = useState(false);
 
-  const [seniors, setSeniors] = useState<any[]>([]);
+  const { data } = useSWR<{ data: any[] }>("/api/seniors");
+  const seniors = data?.data ?? [];
   const [q, setQ] = useState("");
   const [picked, setPicked] = useState<any | null>(null);
-
-  useEffect(() => {
-    fetch("/api/seniors").then((r) => r.json()).then((j) => setSeniors(j.data ?? []));
-  }, []);
 
   const filtered = q
     ? seniors.filter((s) => s.name.includes(q)).slice(0, 30)
