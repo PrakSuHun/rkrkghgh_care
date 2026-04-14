@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, UserCheck, UserPlus, Tag, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, UserCheck, UserPlus, FileText, LogOut } from "lucide-react";
 
 const tabs = [
   { href: "/", label: "대시보드", icon: LayoutDashboard },
   { href: "/seniors", label: "어르신", icon: Users },
   { href: "/workers", label: "요양사", icon: UserCheck },
   { href: "/assignments", label: "배정", icon: UserPlus },
-  { href: "/tag-monitor", label: "태그", icon: Tag },
+  { href: "/documents", label: "서류", icon: FileText },
 ];
 
 export default function TopNav() {
