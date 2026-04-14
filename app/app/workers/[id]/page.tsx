@@ -25,11 +25,14 @@ export default function WorkerDetailPage() {
     setLoading(false);
   }, [id]);
 
+  useEffect(() => { load(); }, [load]);
+
+  const hasProcessing = (data?.logs ?? []).some((l: any) => l.status === "processing");
   useEffect(() => {
-    load();
+    if (!hasProcessing) return;
     const interval = setInterval(load, 3000);
     return () => clearInterval(interval);
-  }, [load]);
+  }, [hasProcessing, load]);
 
   const openPicker = async (mode: "add" | any) => {
     if (mode === "add") setAddOpen(true);

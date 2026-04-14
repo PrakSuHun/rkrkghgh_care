@@ -25,11 +25,14 @@ export default function SeniorDetailPage() {
     setLoading(false);
   }, [id]);
 
+  useEffect(() => { load(); }, [load]);
+
+  const hasProcessing = (data?.journals ?? []).some((j: any) => j.status === "processing");
   useEffect(() => {
-    load();
+    if (!hasProcessing) return;
     const interval = setInterval(load, 3000);
     return () => clearInterval(interval);
-  }, [load]);
+  }, [hasProcessing, load]);
 
   const openPicker = async (mode: "add" | any) => {
     if (mode === "add") setAddOpen(true);
