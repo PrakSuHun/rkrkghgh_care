@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import useSWR from "swr";
+import { useDebounce } from "@/lib/useDebounce";
 import Link from "next/link";
 import { Plus, Search, User, ChevronRight } from "lucide-react";
 
@@ -54,8 +55,9 @@ export default function SeniorsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("active");
 
+  const debouncedSearch = useDebounce(search, 300);
   const params = new URLSearchParams();
-  if (search) params.set("search", search);
+  if (debouncedSearch) params.set("search", debouncedSearch);
   if (statusFilter) params.set("status", statusFilter);
   const key = `/api/seniors?${params}`;
   const { data, isLoading } = useSWR<{ data: Senior[]; total: number }>(key, { keepPreviousData: true });

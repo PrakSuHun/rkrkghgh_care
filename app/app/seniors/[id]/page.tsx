@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import useSWR from "swr";
+import { invalidate } from "@/lib/swr";
 import Link from "next/link";
 import { ArrowLeft, Mic, FileText, Loader2, Trash2, Repeat, Plus, X } from "lucide-react";
 import RecordingDialog from "../../components/RecordingDialog";
@@ -22,7 +23,10 @@ export default function SeniorDetailPage() {
     refreshInterval: (d: any) => (d?.journals ?? []).some((j: any) => j.status === "processing") ? 3000 : 0,
   });
   const loading = isLoading;
-  const load = () => mutate();
+  const load = () => {
+    mutate();
+    invalidate("/api/seniors", "/api/workers", "/api/assignments");
+  };
 
   const openPicker = async (mode: "add" | any) => {
     if (mode === "add") setAddOpen(true);

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import useSWR from "swr";
+import { useDebounce } from "@/lib/useDebounce";
 import Link from "next/link";
 import { Plus, Search, UserCheck, ChevronRight, Phone } from "lucide-react";
 
@@ -22,8 +23,9 @@ export default function WorkersPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("active");
 
+  const debouncedSearch = useDebounce(search, 300);
   const params = new URLSearchParams();
-  if (search) params.set("search", search);
+  if (debouncedSearch) params.set("search", debouncedSearch);
   if (statusFilter) params.set("status", statusFilter);
   const { data, isLoading } = useSWR<{ caregivers: Caregiver[]; total: number }>(
     `/api/workers?${params.toString()}`,
