@@ -17,6 +17,7 @@ interface Caregiver {
   status: "active" | "resigned";
   activeRecipientCount: number;
   lastCounselingDate: string | null;
+  senior_names: string[];
 }
 
 export default function WorkersPage() {
@@ -102,8 +103,7 @@ export default function WorkersPage() {
                     </div>
                     <div className="mt-0.5 text-xs text-gray-500 truncate">
                       {c.phone && <span className="inline-flex items-center gap-0.5"><Phone className="w-3 h-3" />{c.phone} · </span>}
-                      담당 {c.activeRecipientCount}명
-                      {c.lastCounselingDate && <span> · 상담 {c.lastCounselingDate}</span>}
+                      담당 {c.senior_names.length === 0 ? <span className="text-amber-600">미배정</span> : c.senior_names.join(", ")}
                     </div>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-300 shrink-0" />
