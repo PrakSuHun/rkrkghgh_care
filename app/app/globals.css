@@ -53,3 +53,22 @@ table {
 button, a {
   touch-action: manipulation;
 }
+
+/* 인쇄 스타일 */
+@media print {
+  .no-print, nav, header { display: none !important; }
+  body { background: white !important; padding: 0 !important; }
+  .print-sheet {
+    border: none !important;
+    box-shadow: none !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 12mm !important;
+  }
+  textarea {
+    border: none !important;
+    background: transparent !important;
+    resize: none !important;
+  }
+}
+@page { margin: 15mm; size: A4; }

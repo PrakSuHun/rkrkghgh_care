@@ -120,7 +120,7 @@ ${j}
 export async function generateMeeting(input: GenInput) {
   const prompt = basePrompt(input) + "\n" + typeSpecificPrompt(input);
   const model = getClient().getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: "gemini-2.5-pro",
     generationConfig: { ...LOW_TEMP_GENERATION_CONFIG, responseMimeType: "application/json" },
   });
   const res = await model.generateContent(prompt);
