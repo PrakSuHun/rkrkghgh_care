@@ -141,6 +141,8 @@ button, a {
 
   @page { size: A4 portrait; margin: 10mm; }
 
+  .print-sheet.nf-sheet { padding: 0 !important; margin: 0 !important; }
+
   .nf-sheet {
     font-size: 9pt !important;
     line-height: 1.2 !important;
@@ -155,12 +157,20 @@ button, a {
     max-height: 277mm;
     overflow: hidden;
     page-break-after: always;
+    break-after: page;
     page-break-inside: avoid;
+    break-inside: avoid;
     box-sizing: border-box;
     position: relative;
     padding-bottom: 8mm;
   }
-  .nf-page:last-of-type { page-break-after: auto; }
+  .nf-page:last-of-type,
+  .nf-page:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+    height: auto;
+    max-height: 277mm;
+  }
   .nf-table td, .nf-table th {
     padding: 1px 3px !important;
     font-size: 9pt !important;

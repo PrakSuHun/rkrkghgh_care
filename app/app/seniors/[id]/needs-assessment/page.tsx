@@ -172,19 +172,10 @@ export default function NeedsAssessmentFullPage() {
 
       <article className="print-sheet nf-sheet max-w-5xl mx-auto bg-white border p-6 sm:p-10 mb-4">
         <Page1 d={full} u={update} t={toggleInArray} />
-        <div className="nf-page-num">1 / 5</div>
-        <div className="page-break" />
         <Page2 d={full} u={update} t={toggleInArray} />
-        <div className="nf-page-num">2 / 5</div>
-        <div className="page-break" />
         <Page3 d={full} u={update} t={toggleInArray} />
-        <div className="nf-page-num">3 / 5</div>
-        <div className="page-break" />
         <Page4 d={full} u={update} t={toggleInArray} />
-        <div className="nf-page-num">4 / 5</div>
-        <div className="page-break" />
         <Page5 d={full} u={update} t={toggleInArray} />
-        <div className="nf-page-num">5 / 5</div>
       </article>
     </>
   );
@@ -200,6 +191,7 @@ function Page1({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
 
   return (
     <section className="nf-page">
+      <div className="nf-page-num">1 / 5</div>
       <h1 className="nf-title">욕구조사기록지</h1>
       <p className="nf-notice">※ 작성자는 최근 1개월 시점의 수급자 상태를 종합하여 작성하여 주시기 바랍니다.</p>
       <p className="nf-notice">※ [ ], □에는 해당되는 곳에 ∨표기를 합니다.</p>
@@ -249,12 +241,19 @@ function Page1({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
             </td>
           </tr>
           <tr>
-            <th className="w-20 text-center">면담자</th>
+            <th rowSpan={2} className="w-20 text-center">면담자</th>
             <td colSpan={4}>
               <Cb on={s1.interviewer_type === "수급자"} label="수급자" onToggle={() => u(["section1_general", "interviewer_type"], "수급자")} />
+            </td>
+          </tr>
+          <tr>
+            <td>
               <Cb on={s1.interviewer_type === "보호자"} label="보호자" onToggle={() => u(["section1_general", "interviewer_type"], "보호자")} />
-              &nbsp;&nbsp;성명 <EditInline value={s1.interviewer_name} onChange={(v) => u(["section1_general", "interviewer_name"], v)} />
-              &nbsp;&nbsp;주 수발자 여부{" "}
+            </td>
+            <th>성명</th>
+            <td><EditInline value={s1.interviewer_name} onChange={(v) => u(["section1_general", "interviewer_name"], v)} /></td>
+            <th>주 수발자 여부</th>
+            <td>
               <Cb on={!!s1.is_primary_caregiver} label="Y" onToggle={() => u(["section1_general", "is_primary_caregiver"], true)} />
               <Cb on={s1.is_primary_caregiver === false} label="N" onToggle={() => u(["section1_general", "is_primary_caregiver"], false)} />
             </td>
@@ -274,7 +273,10 @@ function Page1({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
             </td>
           </tr>
           <tr>
-            <th colSpan={6} className="nf-sub-ko" style={{ background: "#fafafa" }}>가. 보유질환</th>
+            <th className="w-24 nf-sub-ko" style={{ background: "#fafafa" }}>가. 보유질환</th>
+            <td colSpan={5}>
+              <Cb on={!!dis.none} label="없음" onToggle={() => u(["section2_health", "diseases", "none"], !dis.none)} />
+            </td>
           </tr>
           <DiseaseRow cat="뇌신경계" items={["뇌졸중(뇌출혈, 뇌경색증)", "치매", "파킨슨병", "우울증"]} path={["section2_health", "diseases", "neuro"]} data={dis.neuro ?? []} t={t} />
           <DiseaseRow cat="호흡·순환기계" items={["고혈압", "협심증", "심근경색증", "천식", "만성폐쇄성폐질환"]} path={["section2_health", "diseases", "cardio"]} data={dis.cardio ?? []} t={t} />
@@ -442,6 +444,7 @@ function Page2({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
 
   return (
     <section className="nf-page">
+      <div className="nf-page-num">2 / 5</div>
       <div className="nf-section-bar">3. 일상생활기능</div>
       <p className="nf-notice" style={{ textAlign: "right" }}>※도움이 필요한 정도를 평가하여 해당 숫자에 ∨ 표기를 합니다.<br />(0)혼자 할 수 있음, (1) 지시(준비)도움, (2) 직접(부축)도움, (3) 전혀 수행할 수 없음</p>
       <table className="nf-table">
@@ -540,8 +543,12 @@ function Page2({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
               <th className="w-24">{l}</th>
               <td>
                 <Cb on={s4[k] === "없음"} label="없음" onToggle={() => u(["section4_physical", k], "없음")} />
-                <Cb on={s4[k]?.includes("상지")} label="상지" onToggle={() => u(["section4_physical", k], "상지")} />
-                <Cb on={s4[k]?.includes("하지")} label="하지" onToggle={() => u(["section4_physical", k], "하지")} />
+                <Cb on={s4[k]?.includes("상지")} label="상지(" onToggle={() => u(["section4_physical", k], "상지")} />
+                <Cb on={s4[`${k}_arm_left`]} label="좌" onToggle={() => u(["section4_physical", `${k}_arm_left`], !s4[`${k}_arm_left`])} />
+                <Cb on={s4[`${k}_arm_right`]} label="우" onToggle={() => u(["section4_physical", `${k}_arm_right`], !s4[`${k}_arm_right`])} />)
+                &nbsp;<Cb on={s4[k]?.includes("하지")} label="하지(" onToggle={() => u(["section4_physical", k], "하지")} />
+                <Cb on={s4[`${k}_leg_left`]} label="좌" onToggle={() => u(["section4_physical", `${k}_leg_left`], !s4[`${k}_leg_left`])} />
+                <Cb on={s4[`${k}_leg_right`]} label="우" onToggle={() => u(["section4_physical", `${k}_leg_right`], !s4[`${k}_leg_right`])} />)
                 &nbsp;부위( <EditInline value={s4[`${k}_site`]} onChange={(v) => u(["section4_physical", `${k}_site`], v)} width={120} /> )
               </td>
             </tr>
@@ -604,6 +611,7 @@ function Page3({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
 
   return (
     <section className="nf-page">
+      <div className="nf-page-num">3 / 5</div>
       <div className="nf-section-bar">5. 간호관리</div>
       <table className="nf-table">
         <tbody>
@@ -655,21 +663,23 @@ function Page3({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
           <tr>
             <th className="w-24">가. 인지기능</th>
             <td>
-              <Cb on={(s6.cognitive ?? []).includes("양호")} label="양호" onToggle={() => t(["section6_cognition", "cognitive"], "양호")} />
+              <div><Cb on={(s6.cognitive ?? []).includes("양호")} label="양호" onToggle={() => t(["section6_cognition", "cognitive"], "양호")} /></div>
               <div>
-                <Cb on={(s6.cognitive ?? []).includes("기억력 저하")} label="기억력 저하" onToggle={() => t(["section6_cognition", "cognitive"], "기억력 저하")} />
-                (<Cb on={(s6.cognitive ?? []).includes("단기")} label="단기" onToggle={() => t(["section6_cognition", "cognitive"], "단기")} />
+                <Cb on={(s6.cognitive ?? []).includes("기억력 저하")} label="기억력 저하(" onToggle={() => t(["section6_cognition", "cognitive"], "기억력 저하")} />
+                <Cb on={(s6.cognitive ?? []).includes("단기")} label="단기" onToggle={() => t(["section6_cognition", "cognitive"], "단기")} />
                 <Cb on={(s6.cognitive ?? []).includes("장기")} label="장기" onToggle={() => t(["section6_cognition", "cognitive"], "장기")} />)
               </div>
               <div>
-                <Cb on={(s6.cognitive ?? []).includes("지남력 저하")} label="지남력 저하" onToggle={() => t(["section6_cognition", "cognitive"], "지남력 저하")} />
-                (<Cb on={(s6.cognitive ?? []).includes("시간")} label="시간" onToggle={() => t(["section6_cognition", "cognitive"], "시간")} />
+                <Cb on={(s6.cognitive ?? []).includes("지남력 저하")} label="지남력 저하(" onToggle={() => t(["section6_cognition", "cognitive"], "지남력 저하")} />
+                <Cb on={(s6.cognitive ?? []).includes("시간")} label="시간" onToggle={() => t(["section6_cognition", "cognitive"], "시간")} />
                 <Cb on={(s6.cognitive ?? []).includes("장소")} label="장소" onToggle={() => t(["section6_cognition", "cognitive"], "장소")} />
                 <Cb on={(s6.cognitive ?? []).includes("사람")} label="사람" onToggle={() => t(["section6_cognition", "cognitive"], "사람")} />)
               </div>
-              <Cb on={(s6.cognitive ?? []).includes("판단력 저하")} label="판단력 저하" onToggle={() => t(["section6_cognition", "cognitive"], "판단력 저하")} />
-              <Cb on={(s6.cognitive ?? []).includes("이해력 저하")} label="이해력 저하" onToggle={() => t(["section6_cognition", "cognitive"], "이해력 저하")} />
-              <Cb on={(s6.cognitive ?? []).includes("주의력 저하")} label="주의력 저하" onToggle={() => t(["section6_cognition", "cognitive"], "주의력 저하")} />
+              <div>
+                <Cb on={(s6.cognitive ?? []).includes("판단력 저하")} label="판단력 저하" onToggle={() => t(["section6_cognition", "cognitive"], "판단력 저하")} />
+                <Cb on={(s6.cognitive ?? []).includes("이해력 저하")} label="이해력 저하" onToggle={() => t(["section6_cognition", "cognitive"], "이해력 저하")} />
+                <Cb on={(s6.cognitive ?? []).includes("주의력 저하")} label="주의력 저하" onToggle={() => t(["section6_cognition", "cognitive"], "주의력 저하")} />
+              </div>
             </td>
           </tr>
           <tr>
@@ -747,6 +757,7 @@ function Page4({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
 
   return (
     <section className="nf-page">
+      <div className="nf-page-num">4 / 5</div>
       <div className="nf-section-bar">7. 수급자의 가족 및 지지체계</div>
       <table className="nf-table">
         <tbody>
@@ -822,9 +833,22 @@ function Page4({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
           <tr><th colSpan={2} className="nf-sub-ko" style={{ background: "#fafafa" }}>다. 현재 이용 중인 지역사회 자원</th></tr>
           <tr>
             <td colSpan={2}>
-              {["없음", "노인맞춤돌봄서비스", "노인복지관", "보건의료서비스(보건소, 치매안심센터 등)", "식사지원(급식 및 도시락 배달 등)", "이동지원 서비스(차량지원, 무료택시 등)", "주거지원서비스(도배, 장판, 주택개조 등)", "이미용서비스", "장애인활동지원서비스", "종교단체 지원", "기타"].map((x) => (
-                <Cb key={x} on={(s7.community ?? []).includes(x)} label={x} onToggle={() => t(["section7_support", "community"], x)} />
-              ))}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" }}>
+                <div><Cb on={(s7.community ?? []).includes("없음")} label="없음" onToggle={() => t(["section7_support", "community"], "없음")} /></div>
+                <div></div>
+                <div><Cb on={(s7.community ?? []).includes("노인맞춤돌봄서비스")} label="노인맞춤돌봄서비스(서비스 내용: )" onToggle={() => t(["section7_support", "community"], "노인맞춤돌봄서비스")} /></div>
+                <div></div>
+                <div><Cb on={(s7.community ?? []).includes("노인복지관")} label="노인복지관" onToggle={() => t(["section7_support", "community"], "노인복지관")} /></div>
+                <div><Cb on={(s7.community ?? []).includes("보건의료서비스(보건소, 치매안심센터 등)")} label="보건의료서비스(보건소, 치매안심센터 등)" onToggle={() => t(["section7_support", "community"], "보건의료서비스(보건소, 치매안심센터 등)")} /></div>
+                <div><Cb on={(s7.community ?? []).includes("식사지원(급식 및 도시락 배달 등)")} label="식사지원(급식 및 도시락 배달 등)" onToggle={() => t(["section7_support", "community"], "식사지원(급식 및 도시락 배달 등)")} /></div>
+                <div><Cb on={(s7.community ?? []).includes("이동지원 서비스(차량지원, 무료택시 등)")} label="이동지원 서비스(차량지원, 무료택시 등)" onToggle={() => t(["section7_support", "community"], "이동지원 서비스(차량지원, 무료택시 등)")} /></div>
+                <div><Cb on={(s7.community ?? []).includes("주거지원서비스(도배, 장판, 주택개조 등)")} label="주거지원서비스(도배, 장판, 주택개조 등)" onToggle={() => t(["section7_support", "community"], "주거지원서비스(도배, 장판, 주택개조 등)")} /></div>
+                <div><Cb on={(s7.community ?? []).includes("이미용서비스")} label="이미용서비스" onToggle={() => t(["section7_support", "community"], "이미용서비스")} /></div>
+                <div><Cb on={(s7.community ?? []).includes("장애인활동지원서비스")} label="장애인활동지원서비스" onToggle={() => t(["section7_support", "community"], "장애인활동지원서비스")} /></div>
+                <div><Cb on={(s7.community ?? []).includes("종교단체 지원")} label="종교단체 지원" onToggle={() => t(["section7_support", "community"], "종교단체 지원")} /></div>
+                <div><Cb on={(s7.community ?? []).includes("기타")} label="기타 ( )" onToggle={() => t(["section7_support", "community"], "기타")} /></div>
+                <div></div>
+              </div>
             </td>
           </tr>
           <tr><th colSpan={2} className="nf-sub-ko" style={{ background: "#fafafa" }}>라. 의견 및 판단근거</th></tr>
@@ -897,14 +921,46 @@ function Page5({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
 
   return (
     <section className="nf-page">
+      <div className="nf-page-num">5 / 5</div>
       <div className="nf-section-bar">9. 수급자 및 보호자가 희망하는 서비스</div>
       <table className="nf-table">
         <tbody>
           <tr><th className="w-32">가. 신체활동지원</th>
-            {DG(["section9_desired", "physical"], ["개인위생 세면", "개인위생 구강청결", "개인위생 몸단장", "개인위생 머리감기", "개인위생 옷갈아입기", "몸 씻기(목욕)", "체위변경하기", "식사하기(식사도움)", "이동도움(부축, 휠체어 등)", "화장실 이용하기(이동변기, 기저귀 교환 등)"])}
+            <td>
+              <div>
+                개인위생(
+                {["세면", "구강청결", "몸단장", "머리감기", "옷갈아입기"].map((x) => (
+                  <Cb key={x} on={(s9.physical ?? []).includes(`개인위생 ${x}`)} label={x} onToggle={() => t(["section9_desired", "physical"], `개인위생 ${x}`)} />
+                ))}
+                도움)
+              </div>
+              <div>
+                <Cb on={(s9.physical ?? []).includes("몸 씻기(목욕)")} label="몸 씻기(목욕)" onToggle={() => t(["section9_desired", "physical"], "몸 씻기(목욕)")} />
+                <Cb on={(s9.physical ?? []).includes("체위변경하기")} label="체위변경하기" onToggle={() => t(["section9_desired", "physical"], "체위변경하기")} />
+                <Cb on={(s9.physical ?? []).includes("식사하기(식사도움)")} label="식사하기(식사도움)" onToggle={() => t(["section9_desired", "physical"], "식사하기(식사도움)")} />
+              </div>
+              <div>
+                <Cb on={(s9.physical ?? []).includes("이동도움(부축, 휠체어 등)")} label="이동도움(부축, 휠체어 등)" onToggle={() => t(["section9_desired", "physical"], "이동도움(부축, 휠체어 등)")} />
+                <Cb on={(s9.physical ?? []).includes("화장실 이용하기(이동변기, 기저귀 교환 등)")} label="화장실 이용하기(이동변기, 기저귀 교환 등)" onToggle={() => t(["section9_desired", "physical"], "화장실 이용하기(이동변기, 기저귀 교환 등)")} />
+              </div>
+            </td>
           </tr>
           <tr><th>나. 일상생활 지원</th>
-            {DG(["section9_desired", "daily"], ["식사 준비 및 정리", "청소·주변정돈", "의복 세탁 및 관리", "장보기", "복약도움", "외출 동행 병원", "외출 동행 관공서", "외출 동행 산책", "외출 동행 기타"])}
+            <td>
+              <div>
+                <Cb on={(s9.daily ?? []).includes("식사 준비 및 정리")} label="식사 준비 및 정리" onToggle={() => t(["section9_desired", "daily"], "식사 준비 및 정리")} />
+                <Cb on={(s9.daily ?? []).includes("청소·주변정돈")} label="청소·주변정돈" onToggle={() => t(["section9_desired", "daily"], "청소·주변정돈")} />
+                <Cb on={(s9.daily ?? []).includes("의복 세탁 및 관리")} label="의복 세탁 및 관리" onToggle={() => t(["section9_desired", "daily"], "의복 세탁 및 관리")} />
+                <Cb on={(s9.daily ?? []).includes("장보기")} label="장보기" onToggle={() => t(["section9_desired", "daily"], "장보기")} />
+              </div>
+              <div>
+                <Cb on={(s9.daily ?? []).includes("복약도움")} label="복약도움" onToggle={() => t(["section9_desired", "daily"], "복약도움")} />
+                <Cb on={(s9.daily ?? []).includes("외출 동행")} label="외출 동행(" onToggle={() => t(["section9_desired", "daily"], "외출 동행")} />
+                {["병원", "관공서", "산책", "기타"].map((x) => (
+                  <Cb key={x} on={(s9.daily ?? []).includes(`외출 동행 ${x}`)} label={x} onToggle={() => t(["section9_desired", "daily"], `외출 동행 ${x}`)} />
+                ))})
+              </div>
+            </td>
           </tr>
           <tr><th>다. 기능회복훈련</th>
             {DG(["section9_desired", "rehab"], ["신체기능 훈련", "일상생활 동작 훈련", "인지기능 향상 훈련", "여가·정서프로그램", "물리치료", "작업치료", "기타"])}
