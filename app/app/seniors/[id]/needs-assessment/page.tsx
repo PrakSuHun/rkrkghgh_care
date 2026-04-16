@@ -930,7 +930,7 @@ function Page5({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
       </table>
 
       <div className="nf-section-bar">10. 종합의견</div>
-      <table className="nf-table">
+      <table className="nf-table nf-summary">
         <tbody>
           <tr><th className="w-32">1. 건강상태</th><td><EditText value={s10.health} onChange={(v) => u(["section10_summary", "health"], v)} rows={4} /></td></tr>
           <tr><th>2. 생활기능 및 신체기능</th><td><EditText value={s10.function} onChange={(v) => u(["section10_summary", "function"], v)} rows={4} /></td></tr>

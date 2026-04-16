@@ -138,4 +138,61 @@ button, a {
 .nf-page-num { text-align: center; font-size: 9pt; margin-top: 6px; color: #555; }
 @media print {
   .nf-cb:hover, .nf-score-cell:hover, .nf-edit-text:hover, .nf-edit-inline:hover { background: transparent; }
+
+  @page { size: A4 portrait; margin: 10mm; }
+
+  .nf-sheet {
+    font-size: 9pt !important;
+    line-height: 1.2 !important;
+    border: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+  }
+  .nf-page {
+    height: 277mm;
+    max-height: 277mm;
+    overflow: hidden;
+    page-break-after: always;
+    page-break-inside: avoid;
+    box-sizing: border-box;
+    position: relative;
+    padding-bottom: 8mm;
+  }
+  .nf-page:last-of-type { page-break-after: auto; }
+  .nf-table td, .nf-table th {
+    padding: 1px 3px !important;
+    font-size: 9pt !important;
+  }
+  .nf-section-bar {
+    font-size: 10pt !important;
+    padding: 2px 6px !important;
+    margin-top: 4px !important;
+  }
+  .nf-title { font-size: 14pt !important; margin-bottom: 4px !important; }
+  .nf-notice { font-size: 8pt !important; }
+  .nf-edit-text, .nf-edit-inline {
+    font-size: 9pt !important;
+    background: transparent !important;
+    border: 0 !important;
+    resize: none !important;
+  }
+  .nf-edit-text { max-height: 30mm; overflow: hidden !important; }
+  .nf-cb { font-size: 9pt !important; margin-right: 4px !important; }
+  .page-break { display: none !important; }
+  .nf-page-num {
+    font-size: 8pt !important;
+    position: absolute;
+    bottom: 3mm;
+    left: 0;
+    right: 0;
+    text-align: center;
+    color: #000;
+  }
+  /* 긴 텍스트 자동 축소 */
+  .nf-shrink { overflow: hidden; }
+  .nf-shrink textarea { max-height: 40mm; }
+  /* 종합의견(페이지 5)은 각 항목 크게 */
+  .nf-summary textarea { max-height: 50mm; font-size: 9pt !important; }
 }

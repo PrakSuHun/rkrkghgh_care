@@ -132,6 +132,11 @@ ${journalText}
 스키마 (빈 값은 그대로, 없는 정보는 null/빈문자/0 사용, 창작 금지):
 ${SCHEMA}
 
+※ 길이 제한 (반드시 준수):
+- 각 섹션의 "opinion" 필드: **3문장 이내, 총 150자 이내**
+- section10_summary의 health/function/cognition/care_plan_direction: 각 **5문장 이내, 250자 이내**
+- 넘치면 인쇄 시 잘림. 핵심만 뽑아 간결하게.
+
 JSON만 출력.`;
 
   const res = await model.generateContent(prompt);
