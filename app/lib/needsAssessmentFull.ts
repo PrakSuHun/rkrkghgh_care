@@ -103,7 +103,7 @@ export async function generateNeedsAssessmentFull(ctx: {
   caregivers?: string[];
 }): Promise<NeedsAssessmentFull> {
   const model = getClient().getGenerativeModel({
-    model: "gemini-2.5-pro",
+    model: "gemini-2.5-flash",
     generationConfig: { ...LOW_TEMP_GENERATION_CONFIG, responseMimeType: "application/json" },
   });
 

@@ -16,17 +16,22 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   ]);
   const cgNames = (assignments ?? []).map((a: any) => a.caregivers?.name).filter(Boolean);
 
-  const data = await generateNeedsAssessmentFull({
-    senior,
-    intake: intake?.extracted_data,
-    journals: journals ?? [],
-    caregivers: cgNames,
-  });
+  try {
+    const data = await generateNeedsAssessmentFull({
+      senior,
+      intake: intake?.extracted_data,
+      journals: journals ?? [],
+      caregivers: cgNames,
+    });
 
-  await supabase
-    .from("seniors")
-    .update({ needs_assessment_full: data, needs_assessment_updated_at: new Date().toISOString() })
-    .eq("id", id);
+    await supabase
+      .from("seniors")
+      .update({ needs_assessment_full: data, needs_assessment_updated_at: new Date().toISOString() })
+      .eq("id", id);
 
-  return NextResponse.json({ data });
+    return NextResponse.json({ data });
+  } catch (e: any) {
+    console.error("Needs assessment generation failed:", e.message);
+    return NextResponse.json({ error: e.message ?? "생성 실패" }, { status: 500 });
+  }
 }
