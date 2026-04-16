@@ -74,4 +74,68 @@ button, a {
 @page { margin: 15mm; size: A4; }
 
 .page-break { page-break-after: always; break-after: page; }
-@media screen { .page-break { display: none; } }
+@media screen { .page-break { display: block; height: 20px; border-top: 2px dashed #bbb; margin: 20px 0; } }
+
+/* 공단 욕구조사기록지 전용 */
+.nf-sheet { font-size: 10pt; line-height: 1.35; color: #000; }
+.nf-title { text-align: center; font-size: 18pt; font-weight: 700; margin-bottom: 10px; }
+.nf-notice { font-size: 9pt; margin: 1px 0; color: #333; }
+.nf-table { width: 100%; border-collapse: collapse; }
+.nf-table td, .nf-table th {
+  border: 1px solid #000;
+  padding: 2px 5px;
+  font-size: 10pt;
+  vertical-align: top;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.nf-table th { background: #f3f4f6; font-weight: 500; text-align: left; }
+.nf-section-bar {
+  background: #e5e7eb;
+  font-weight: 700;
+  padding: 4px 8px;
+  border: 1px solid #000;
+  margin-top: 10px;
+  font-size: 11pt;
+}
+.nf-sub-ko { font-weight: 700; margin-top: 6px; }
+.nf-cb {
+  white-space: nowrap;
+  margin-right: 8px;
+  display: inline-block;
+  cursor: pointer;
+  user-select: none;
+}
+.nf-cb:hover { background: #fef9c3; }
+.nf-cb-inline { white-space: nowrap; }
+.nf-edit-text {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  resize: vertical;
+  padding: 2px;
+}
+.nf-edit-text:hover, .nf-edit-text:focus { background: #fef9c3; outline: none; }
+.nf-edit-inline {
+  display: inline-block;
+  min-width: 40px;
+  border: 0;
+  border-bottom: 1px dotted #888;
+  background: transparent;
+  font: inherit;
+  padding: 0 3px;
+}
+.nf-edit-inline:hover, .nf-edit-inline:focus { background: #fef9c3; outline: none; }
+.nf-score-cell {
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+}
+.nf-score-cell:hover { background: #fef9c3; }
+.nf-score-cell.on { background: #fde68a; font-weight: bold; }
+.nf-page { margin-top: 12px; }
+.nf-page-num { text-align: center; font-size: 9pt; margin-top: 6px; color: #555; }
+@media print {
+  .nf-cb:hover, .nf-score-cell:hover, .nf-edit-text:hover, .nf-edit-inline:hover { background: transparent; }
+}
