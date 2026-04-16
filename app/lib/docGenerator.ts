@@ -35,7 +35,7 @@ function getClient() {
 
 async function aiExpand(prompt: string): Promise<string> {
   const model = getClient().getGenerativeModel({
-    model: "gemini-2.5-pro",
+    model: "gemini-2.5-flash",
     generationConfig: LOW_TEMP_GENERATION_CONFIG,
   });
   const res = await model.generateContent(prompt);
@@ -44,7 +44,7 @@ async function aiExpand(prompt: string): Promise<string> {
 
 export async function refineDocument(doc: DocOutput, instruction: string): Promise<DocOutput> {
   const model = getClient().getGenerativeModel({
-    model: "gemini-2.5-pro",
+    model: "gemini-2.5-flash",
     generationConfig: { ...LOW_TEMP_GENERATION_CONFIG, responseMimeType: "application/json" },
   });
   const prompt = `${NO_HALLUCINATION_RULES}\n${PERSONA_WRITING_RULES}

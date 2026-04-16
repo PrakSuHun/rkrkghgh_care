@@ -96,7 +96,7 @@ const PROMPT = `${NO_HALLUCINATION_RULES}
 
 export async function extractIntakeFromPDF(pdfBuffer: Buffer): Promise<IntakeExtracted> {
   const model = getClient().getGenerativeModel({
-    model: "gemini-2.5-pro",
+    model: "gemini-2.5-flash",
     generationConfig: { ...LOW_TEMP_GENERATION_CONFIG, responseMimeType: "application/json" },
   });
   const res = await model.generateContent([

@@ -13,7 +13,7 @@ export async function generateCounselingBatch(opts: {
   workers: Array<{ id: number; name: string }>;
 }): Promise<Array<{ workerId: number; workerName: string; summary: string }>> {
   const model = getClient().getGenerativeModel({
-    model: "gemini-2.5-pro",
+    model: "gemini-2.5-flash",
     generationConfig: { ...LOW_TEMP_GENERATION_CONFIG, responseMimeType: "application/json" },
   });
 
