@@ -5,7 +5,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import { invalidate } from "@/lib/swr";
 import Link from "next/link";
-import { ArrowLeft, Mic, FileText, Loader2, Trash2, Repeat, Plus, X } from "lucide-react";
+import { ArrowLeft, Mic, FileText, Loader2, Trash2, Repeat, Plus, X, ClipboardList, Activity, FileCheck, MessageSquare, FileUp } from "lucide-react";
 import RecordingDialog from "../../components/RecordingDialog";
 
 type Worker = { id: number; name: string; phone: string | null };
@@ -174,6 +174,8 @@ export default function SeniorDetailPage() {
         </div>
       </section>
 
+      <DocumentsSection seniorId={Number(id)} intakePdfPath={s.intake_pdf_path} />
+
       <section className="bg-white border rounded-xl p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -264,5 +266,88 @@ export default function SeniorDetailPage() {
         onComplete={load}
       />
     </div>
+  );
+}
+
+function DocumentsSection({ seniorId, intakePdfPath }: { seniorId: number; intakePdfPath: string | null | undefined }) {
+  const { data: fallRes } = useSWR<any>(`/api/fall-assessments?senior_id=${seniorId}`);
+  const { data: meetRes } = useSWR<any>(`/api/meetings`);
+  const falls = fallRes?.assessments ?? [];
+  const relatedMeetings = (meetRes?.meetings ?? []).filter((m: any) => m.related_senior_id === seniorId);
+  const [intakeUrl, setIntakeUrl] = useState<string | null>(null);
+
+  const openIntake = async () => {
+    if (!intakePdfPath) return;
+    if (intakeUrl) { window.open(intakeUrl, "_blank"); return; }
+    const r = await fetch(`/api/intake-download?path=${encodeURIComponent(intakePdfPath)}`);
+    const j = await r.json();
+    if (j.url) {
+      setIntakeUrl(j.url);
+      window.open(j.url, "_blank");
+    }
+  };
+
+  return (
+    <section className="bg-white border rounded-xl p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <ClipboardList className="w-5 h-5 text-indigo-600" />
+        <h2 className="text-base font-semibold">서류</h2>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          onClick={openIntake}
+          disabled={!intakePdfPath}
+          className="min-h-[64px] border rounded-lg p-3 text-left active:bg-gray-50 disabled:opacity-40 flex flex-col gap-1"
+        >
+          <FileUp className="w-4 h-4 text-gray-600" />
+          <p className="text-sm font-medium">초기상담기록지</p>
+          <p className="text-xs text-gray-400">{intakePdfPath ? "PDF 보기" : "업로드 없음"}</p>
+        </button>
+
+        <Link href={`/seniors/${seniorId}/needs-assessment`}>
+          <div className="min-h-[64px] border rounded-lg p-3 active:bg-gray-50 flex flex-col gap-1">
+            <FileCheck className="w-4 h-4 text-indigo-600" />
+            <p className="text-sm font-medium">욕구사정지</p>
+            <p className="text-xs text-gray-400">공단 5페이지 서식</p>
+          </div>
+        </Link>
+      </div>
+
+      <div>
+        <p className="text-xs font-medium text-gray-700 inline-flex items-center gap-1 mb-1"><Activity className="w-3 h-3" /> 낙상평가지</p>
+        {falls.length === 0 ? (
+          <p className="text-xs text-gray-400 py-2">평가지 없음 — 대상자 등록 시 자동 생성됨</p>
+        ) : (
+          <div className="space-y-1">
+            {falls.slice(0, 3).map((f: any) => (
+              <Link key={f.id} href={`/seniors/${seniorId}/fall-assessment/${f.id}`}>
+                <div className="border rounded-lg p-2 active:bg-gray-50 flex items-center justify-between gap-2">
+                  <span className="text-xs truncate">{f.assessed_at} · 합계 {f.total}점</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${f.total <= 4 ? "bg-green-100 text-green-700" : f.total <= 10 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}`}>{f.interpretation}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <p className="text-xs font-medium text-gray-700 inline-flex items-center gap-1 mb-1"><MessageSquare className="w-3 h-3" /> 관련 회의일지</p>
+        {relatedMeetings.length === 0 ? (
+          <p className="text-xs text-gray-400 py-2">이 대상자와 연결된 회의록 없음</p>
+        ) : (
+          <div className="space-y-1">
+            {relatedMeetings.slice(0, 5).map((m: any) => (
+              <Link key={m.id} href={`/documents/meeting/${m.id}`}>
+                <div className="border rounded-lg p-2 active:bg-gray-50">
+                  <p className="text-xs truncate">{m.held_at} · {m.title}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

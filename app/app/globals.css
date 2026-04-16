@@ -72,3 +72,6 @@ button, a {
   }
 }
 @page { margin: 15mm; size: A4; }
+
+.page-break { page-break-after: always; break-after: page; }
+@media screen { .page-break { display: none; } }

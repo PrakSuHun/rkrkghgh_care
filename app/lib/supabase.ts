@@ -23,3 +23,4 @@ export const supabase = new Proxy({} as SupabaseClient, {
 });
 
 export const AUDIO_BUCKET = "audio";
+export const INTAKE_BUCKET = "intake-pdfs";
