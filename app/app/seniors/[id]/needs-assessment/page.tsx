@@ -944,7 +944,23 @@ function Page5({ d, u, ut, t }: { d: Dict; u: (p: string[], v: any) => void; ut:
         <div className="nf-group">
           <div className="nf-sub-label">가. 신체활동지원</div>
           <div className="nf-row">
-            개인위생(
+            <Cb
+              on={["세면", "구강청결", "몸단장", "머리감기", "옷갈아입기"].some((x) => has(phy, `개인위생 ${x}`))}
+              label="개인위생("
+              onToggle={() => {
+                const subs = ["세면", "구강청결", "몸단장", "머리감기", "옷갈아입기"];
+                const anyOn = subs.some((x) => has(phy, `개인위생 ${x}`));
+                const next = structuredClone(d);
+                const arr: string[] = Array.isArray(next.section9_desired?.physical) ? [...next.section9_desired.physical] : [];
+                if (anyOn) {
+                  next.section9_desired.physical = arr.filter((v: string) => !v.startsWith("개인위생"));
+                } else {
+                  subs.forEach((x) => { if (!arr.includes(`개인위생 ${x}`)) arr.push(`개인위생 ${x}`); });
+                  next.section9_desired.physical = arr;
+                }
+                u(["section9_desired", "physical"], next.section9_desired.physical);
+              }}
+            />
             {["세면", "구강청결", "몸단장", "머리감기", "옷갈아입기"].map((x) => (
               <Cb key={x} on={has(phy, `개인위생 ${x}`)} label={x} onToggle={() => t(["section9_desired", "physical"], `개인위생 ${x}`)} />
             ))}
@@ -971,7 +987,23 @@ function Page5({ d, u, ut, t }: { d: Dict; u: (p: string[], v: any) => void; ut:
         </div>
         <div className="nf-row">
           <Cb on={has(dly, "복약도움")} label="복약도움" onToggle={() => t(["section9_desired", "daily"], "복약도움")} />
-          <Cb on={has(dly, "외출 동행")} label="외출 동행(" onToggle={() => t(["section9_desired", "daily"], "외출 동행")} />
+          <Cb
+            on={["병원", "관공서", "산책", "기타"].some((x) => has(dly, `외출 동행 ${x}`))}
+            label="외출 동행("
+            onToggle={() => {
+              const subs = ["병원", "관공서", "산책", "기타"];
+              const anyOn = subs.some((x) => has(dly, `외출 동행 ${x}`));
+              const next = structuredClone(d);
+              const arr: string[] = Array.isArray(next.section9_desired?.daily) ? [...next.section9_desired.daily] : [];
+              if (anyOn) {
+                next.section9_desired.daily = arr.filter((v: string) => !v.startsWith("외출 동행"));
+              } else {
+                subs.forEach((x) => { if (!arr.includes(`외출 동행 ${x}`)) arr.push(`외출 동행 ${x}`); });
+                next.section9_desired.daily = arr;
+              }
+              u(["section9_desired", "daily"], next.section9_desired.daily);
+            }}
+          />
           {["병원", "관공서", "산책", "기타"].map((x) => (
             <Cb key={x} on={has(dly, `외출 동행 ${x}`)} label={x} onToggle={() => t(["section9_desired", "daily"], `외출 동행 ${x}`)} />
           ))})
