@@ -5,15 +5,13 @@ import { useState } from "react";
 import useSWR from "swr";
 import { invalidate } from "@/lib/swr";
 import Link from "next/link";
-import { ArrowLeft, Mic, MessageSquare, Loader2, Trash2, Repeat, Plus, X } from "lucide-react";
-import RecordingDialog from "../../components/RecordingDialog";
+import { ArrowLeft, MessageSquare, Loader2, Trash2, Repeat, Plus, X } from "lucide-react";
 
 type Senior = { id: number; name: string; grade: string | null };
 
 export default function WorkerDetailPage() {
   const params = useParams();
   const id = params.id as string;
-  const [recordOpen, setRecordOpen] = useState(false);
   const [swapFor, setSwapFor] = useState<any | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [allSeniors, setAllSeniors] = useState<Senior[]>([]);
@@ -122,12 +120,6 @@ export default function WorkerDetailPage() {
               className={`min-h-[44px] inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium ${w.status === "active" ? "bg-gray-100 active:bg-gray-300 text-gray-700" : "bg-green-600 text-white active:bg-green-800"}`}
             >
               {w.status === "active" ? "퇴사" : "재직"}
-            </button>
-            <button
-              onClick={() => setRecordOpen(true)}
-              className="min-h-[44px] inline-flex items-center px-4 py-2 bg-emerald-600 active:bg-emerald-800 text-white rounded-lg font-medium"
-            >
-              <Mic className="w-4 h-4 mr-2" /> 녹음
             </button>
           </div>
         </div>
@@ -253,15 +245,6 @@ export default function WorkerDetailPage() {
         </div>
       )}
 
-      <RecordingDialog
-        open={recordOpen}
-        onClose={() => setRecordOpen(false)}
-        title={`${w.name} 상담 녹음`}
-        uploadUrl="/api/counseling"
-        uploadField="worker_id"
-        entityId={w.id}
-        onComplete={load}
-      />
     </div>
   );
 }

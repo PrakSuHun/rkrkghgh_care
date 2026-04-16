@@ -30,13 +30,23 @@ function EditInline({ value, onChange, placeholder, width }: { value: any; onCha
   );
 }
 
-function EditText({ value, onChange, rows = 3 }: { value: any; onChange: (v: string) => void; rows?: number }) {
+function EditText({ value, onChange, rows = 3, heightMm, maxLen }: { value: any; onChange: (v: string) => void; rows?: number; heightMm?: number; maxLen?: number }) {
+  const len = (value ?? "").length;
+  const cap = maxLen ?? 200;
+  const fontPt = len > cap * 2 ? 7 : len > cap * 1.5 ? 8 : len > cap ? 9 : 10;
   return (
     <textarea
       className="nf-edit-text"
       rows={rows}
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value)}
+      style={{
+        resize: "none",
+        overflow: "hidden",
+        height: heightMm ? `${heightMm}mm` : undefined,
+        fontSize: `${fontPt}pt`,
+        lineHeight: 1.25,
+      }}
     />
   );
 }
@@ -84,6 +94,13 @@ export default function NeedsAssessmentFullPage() {
     ref[path[path.length - 1]] = value;
     setFull(next);
     setDirty(true);
+  };
+
+  const updateToggle = (path: string[], value: any) => {
+    if (!full) return;
+    let cur: any = full;
+    for (const p of path) cur = cur?.[p];
+    update(path, cur === value ? null : value);
   };
 
   const toggleInArray = (path: string[], item: string) => {
@@ -171,18 +188,18 @@ export default function NeedsAssessmentFullPage() {
       </div>
 
       <article className="print-sheet nf-sheet max-w-5xl mx-auto bg-white border p-6 sm:p-10 mb-4">
-        <Page1 d={full} u={update} t={toggleInArray} />
-        <Page2 d={full} u={update} t={toggleInArray} />
-        <Page3 d={full} u={update} t={toggleInArray} />
-        <Page4 d={full} u={update} t={toggleInArray} />
-        <Page5 d={full} u={update} t={toggleInArray} />
+        <Page1 d={full} u={update} ut={updateToggle} t={toggleInArray} />
+        <Page2 d={full} u={update} ut={updateToggle} t={toggleInArray} />
+        <Page3 d={full} u={update} ut={updateToggle} t={toggleInArray} />
+        <Page4 d={full} u={update} ut={updateToggle} t={toggleInArray} />
+        <Page5 d={full} u={update} ut={updateToggle} t={toggleInArray} />
       </article>
     </>
   );
 }
 
 // ============== PAGE 1 ==============
-function Page1({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: string[], i: string) => void }) {
+function Page1({ d, u, ut, t }: { d: Dict; u: (p: string[], v: any) => void; ut: (p: string[], v: any) => void; t: (p: string[], i: string) => void }) {
   const h = d.header ?? {};
   const s1 = d.section1_general ?? {};
   const s2 = d.section2_health ?? {};
@@ -211,7 +228,7 @@ function Page1({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
             <th>욕구조사 유형</th>
             <td colSpan={5}>
               {surveyTypes.map((st) => (
-                <Cb key={st} on={h.survey_type === st} label={st + (st === "기타" ? "(   )" : "")} onToggle={() => u(["header", "survey_type"], st)} />
+                <Cb key={st} on={h.survey_type === st} label={st + (st === "기타" ? "(   )" : "")} onToggle={() => ut(["header", "survey_type"], st)} />
               ))}
             </td>
           </tr>
@@ -226,8 +243,8 @@ function Page1({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
             <th className="w-24">성명</th><td><EditInline value={s1.name} onChange={(v) => u(["section1_general", "name"], v)} /></td>
             <th className="w-20">성별</th>
             <td>
-              <Cb on={s1.gender === "M"} label="남" onToggle={() => u(["section1_general", "gender"], "M")} />
-              <Cb on={s1.gender === "F"} label="여" onToggle={() => u(["section1_general", "gender"], "F")} />
+              <Cb on={s1.gender === "M"} label="남" onToggle={() => ut(["section1_general", "gender"], "M")} />
+              <Cb on={s1.gender === "F"} label="여" onToggle={() => ut(["section1_general", "gender"], "F")} />
             </td>
           </tr>
           <tr>
@@ -243,19 +260,19 @@ function Page1({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
           <tr>
             <th rowSpan={2} className="w-20 text-center">면담자</th>
             <td colSpan={4}>
-              <Cb on={s1.interviewer_type === "수급자"} label="수급자" onToggle={() => u(["section1_general", "interviewer_type"], "수급자")} />
+              <Cb on={s1.interviewer_type === "수급자"} label="수급자" onToggle={() => ut(["section1_general", "interviewer_type"], "수급자")} />
             </td>
           </tr>
           <tr>
             <td>
-              <Cb on={s1.interviewer_type === "보호자"} label="보호자" onToggle={() => u(["section1_general", "interviewer_type"], "보호자")} />
+              <Cb on={s1.interviewer_type === "보호자"} label="보호자" onToggle={() => ut(["section1_general", "interviewer_type"], "보호자")} />
             </td>
             <th>성명</th>
             <td><EditInline value={s1.interviewer_name} onChange={(v) => u(["section1_general", "interviewer_name"], v)} /></td>
             <th>주 수발자 여부</th>
             <td>
-              <Cb on={!!s1.is_primary_caregiver} label="Y" onToggle={() => u(["section1_general", "is_primary_caregiver"], true)} />
-              <Cb on={s1.is_primary_caregiver === false} label="N" onToggle={() => u(["section1_general", "is_primary_caregiver"], false)} />
+              <Cb on={!!s1.is_primary_caregiver} label="Y" onToggle={() => ut(["section1_general", "is_primary_caregiver"], true)} />
+              <Cb on={s1.is_primary_caregiver === false} label="N" onToggle={() => ut(["section1_general", "is_primary_caregiver"], false)} />
             </td>
           </tr>
         </tbody>
@@ -266,16 +283,14 @@ function Page1({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
         <tbody>
           <tr>
             <th className="w-20">키/체중</th>
-            <td colSpan={5}>
-              키 <EditInline value={s2.height_cm} onChange={(v) => u(["section2_health", "height_cm"], Number(v) || 0)} width={50} /> cm
-              &nbsp;&nbsp; 체중 <EditInline value={s2.weight_kg} onChange={(v) => u(["section2_health", "weight_kg"], Number(v) || 0)} width={50} /> kg
-              &nbsp;&nbsp; BMI <EditInline value={s2.bmi} onChange={(v) => u(["section2_health", "bmi"], v)} width={60} />
-            </td>
+            <td>키 <EditInline value={s2.height_cm} onChange={(v) => u(["section2_health", "height_cm"], Number(v) || 0)} width={50} /> cm</td>
+            <td>체중 <EditInline value={s2.weight_kg} onChange={(v) => u(["section2_health", "weight_kg"], Number(v) || 0)} width={50} /> kg</td>
+            <td colSpan={3}>BMI <EditInline value={s2.bmi} onChange={(v) => u(["section2_health", "bmi"], v)} width={60} /></td>
           </tr>
           <tr>
             <th className="w-24 nf-sub-ko" style={{ background: "#fafafa" }}>가. 보유질환</th>
             <td colSpan={5}>
-              <Cb on={!!dis.none} label="없음" onToggle={() => u(["section2_health", "diseases", "none"], !dis.none)} />
+              <Cb on={!!dis.none} label="없음" onToggle={() => ut(["section2_health", "diseases", "none"], !dis.none)} />
             </td>
           </tr>
           <DiseaseRow cat="뇌신경계" items={["뇌졸중(뇌출혈, 뇌경색증)", "치매", "파킨슨병", "우울증"]} path={["section2_health", "diseases", "neuro"]} data={dis.neuro ?? []} t={t} />
@@ -296,36 +311,36 @@ function Page1({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
             <th className="w-24">기타 질환</th>
             <td colSpan={5}>
               <div>
-                <Cb on={!!dis.other_cancer} label="암 (진단명:" onToggle={() => u(["section2_health", "diseases", "other_cancer"], dis.other_cancer ? null : "")} />
+                <Cb on={!!dis.other_cancer} label="암 (진단명:" onToggle={() => ut(["section2_health", "diseases", "other_cancer"], dis.other_cancer ? null : "")} />
                 <EditInline value={dis.other_cancer ?? ""} onChange={(v) => u(["section2_health", "diseases", "other_cancer"], v)} width={150} /> )
               </div>
               <div>
-                <Cb on={!!dis.other_allergy} label="알레르기 (" onToggle={() => u(["section2_health", "diseases", "other_allergy"], dis.other_allergy ? null : "")} />
+                <Cb on={!!dis.other_allergy} label="알레르기 (" onToggle={() => ut(["section2_health", "diseases", "other_allergy"], dis.other_allergy ? null : "")} />
                 <EditInline value={dis.other_allergy ?? ""} onChange={(v) => u(["section2_health", "diseases", "other_allergy"], v)} width={150} /> ) <span style={{ fontSize: 9 }}>※ 식품·약물·접촉성 알레르기 등</span>
               </div>
               <div>
-                <Cb on={!!dis.other_other} label="기타 (" onToggle={() => u(["section2_health", "diseases", "other_other"], dis.other_other ? null : "")} />
+                <Cb on={!!dis.other_other} label="기타 (" onToggle={() => ut(["section2_health", "diseases", "other_other"], dis.other_other ? null : "")} />
                 <EditInline value={dis.other_other ?? ""} onChange={(v) => u(["section2_health", "diseases", "other_other"], v)} width={200} /> )
               </div>
             </td>
           </tr>
           <tr>
             <th rowSpan={5} className="w-24 text-center" style={{ writingMode: undefined }}>나. 복약 및<br />의료이용</th>
-            <td colSpan={5}><Cb on={!!s2.medication_none} label="복용하는 약이 없음" onToggle={() => u(["section2_health", "medication_none"], !s2.medication_none)} /></td>
+            <td colSpan={5}><Cb on={!!s2.medication_none} label="복용하는 약이 없음" onToggle={() => ut(["section2_health", "medication_none"], !s2.medication_none)} /></td>
           </tr>
           <tr>
             <td colSpan={5}>
-              <Cb on={!!s2.medication_regular?.reason} label="정기적 약 복용 (사유:" onToggle={() => u(["section2_health", "medication_regular", "reason"], s2.medication_regular?.reason ? "" : " ")} />
+              <Cb on={!!s2.medication_regular?.reason} label="정기적 약 복용 (사유:" onToggle={() => ut(["section2_health", "medication_regular", "reason"], s2.medication_regular?.reason ? "" : " ")} />
               <EditInline value={s2.medication_regular?.reason} onChange={(v) => u(["section2_health", "medication_regular", "reason"], v)} width={160} />
               ,병원명: <EditInline value={s2.medication_regular?.hospital} onChange={(v) => u(["section2_health", "medication_regular", "hospital"], v)} width={120} />
               ,진료주기: <EditInline value={s2.medication_regular?.interval} onChange={(v) => u(["section2_health", "medication_regular", "interval"], v)} width={80} /> )
             </td>
           </tr>
           <tr>
-            <td colSpan={5}><Cb on={!!s2.medication_irregular} label="비정기적 약 복용 (사유:" onToggle={() => u(["section2_health", "medication_irregular"], s2.medication_irregular ? null : "")} /> <EditInline value={s2.medication_irregular ?? ""} onChange={(v) => u(["section2_health", "medication_irregular"], v)} width={200} /> )</td>
+            <td colSpan={5}><Cb on={!!s2.medication_irregular} label="비정기적 약 복용 (사유:" onToggle={() => ut(["section2_health", "medication_irregular"], s2.medication_irregular ? null : "")} /> <EditInline value={s2.medication_irregular ?? ""} onChange={(v) => u(["section2_health", "medication_irregular"], v)} width={200} /> )</td>
           </tr>
           <tr>
-            <td colSpan={5}><Cb on={!!s2.medication_sleep} label="수면장애로 인한 약 복용" onToggle={() => u(["section2_health", "medication_sleep"], !s2.medication_sleep)} /></td>
+            <td colSpan={5}><Cb on={!!s2.medication_sleep} label="수면장애로 인한 약 복용" onToggle={() => ut(["section2_health", "medication_sleep"], !s2.medication_sleep)} /></td>
           </tr>
           <tr>
             <td colSpan={5}>기타 ( <EditInline value={s2.medication_other} onChange={(v) => u(["section2_health", "medication_other"], v)} width={300} /> )</td>
@@ -334,29 +349,29 @@ function Page1({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
           <tr>
             <th className="w-24">1) 구강상태</th>
             <td colSpan={5}>
-              <Cb on={s2.oral_status === "양호"} label="양호" onToggle={() => u(["section2_health", "oral_status"], "양호")} />
-              <Cb on={s2.oral_status?.startsWith("틀니")} label="틀니착용" onToggle={() => u(["section2_health", "oral_status"], "틀니착용")} />
-              <Cb on={(s2.oral_status || "").includes("부분")} label="부분" onToggle={() => u(["section2_health", "oral_status"], "틀니착용(부분)")} />
-              <Cb on={(s2.oral_status || "").includes("완전")} label="완전" onToggle={() => u(["section2_health", "oral_status"], "틀니착용(완전)")} />
-              <Cb on={s2.oral_status === "잔존치아 없음"} label="잔존치아 없음" onToggle={() => u(["section2_health", "oral_status"], "잔존치아 없음")} />
-              <Cb on={s2.oral_status?.startsWith("기타")} label="기타" onToggle={() => u(["section2_health", "oral_status"], "기타")} />
+              <Cb on={s2.oral_status === "양호"} label="양호" onToggle={() => ut(["section2_health", "oral_status"], "양호")} />
+              <Cb on={s2.oral_status?.startsWith("틀니")} label="틀니착용" onToggle={() => ut(["section2_health", "oral_status"], "틀니착용")} />
+              <Cb on={(s2.oral_status || "").includes("부분")} label="부분" onToggle={() => ut(["section2_health", "oral_status"], "틀니착용(부분)")} />
+              <Cb on={(s2.oral_status || "").includes("완전")} label="완전" onToggle={() => ut(["section2_health", "oral_status"], "틀니착용(완전)")} />
+              <Cb on={s2.oral_status === "잔존치아 없음"} label="잔존치아 없음" onToggle={() => ut(["section2_health", "oral_status"], "잔존치아 없음")} />
+              <Cb on={s2.oral_status?.startsWith("기타")} label="기타" onToggle={() => ut(["section2_health", "oral_status"], "기타")} />
             </td>
           </tr>
           <tr>
             <th>2) 구강건강</th>
             <td colSpan={5}>
-              <Cb on={s2.oral_health === "양호"} label="양호" onToggle={() => u(["section2_health", "oral_health"], "양호")} />
-              <Cb on={s2.oral_health === "구취/위생불량"} label="구취/위생불량" onToggle={() => u(["section2_health", "oral_health"], "구취/위생불량")} />
-              <Cb on={s2.oral_health === "잇몸출혈/통증"} label="잇몸출혈/통증" onToggle={() => u(["section2_health", "oral_health"], "잇몸출혈/통증")} />
-              <Cb on={s2.oral_health === "구강건조"} label="구강건조" onToggle={() => u(["section2_health", "oral_health"], "구강건조")} />
-              <Cb on={s2.oral_health === "기타"} label="기타" onToggle={() => u(["section2_health", "oral_health"], "기타")} />
+              <Cb on={s2.oral_health === "양호"} label="양호" onToggle={() => ut(["section2_health", "oral_health"], "양호")} />
+              <Cb on={s2.oral_health === "구취/위생불량"} label="구취/위생불량" onToggle={() => ut(["section2_health", "oral_health"], "구취/위생불량")} />
+              <Cb on={s2.oral_health === "잇몸출혈/통증"} label="잇몸출혈/통증" onToggle={() => ut(["section2_health", "oral_health"], "잇몸출혈/통증")} />
+              <Cb on={s2.oral_health === "구강건조"} label="구강건조" onToggle={() => ut(["section2_health", "oral_health"], "구강건조")} />
+              <Cb on={s2.oral_health === "기타"} label="기타" onToggle={() => ut(["section2_health", "oral_health"], "기타")} />
             </td>
           </tr>
           <tr>
             <th rowSpan={3}>3) 식사형태</th>
             <td colSpan={5}>
               {["일반식", "다진식", "죽", "유동식", "경관영양", "기타"].map((x) => (
-                <Cb key={x} on={s2.diet_form === x} label={x} onToggle={() => u(["section2_health", "diet_form"], x)} />
+                <Cb key={x} on={s2.diet_form === x} label={x} onToggle={() => ut(["section2_health", "diet_form"], x)} />
               ))}
             </td>
           </tr>
@@ -364,27 +379,27 @@ function Page1({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
             <td colSpan={5}>
               치료식 &nbsp;
               {["해당 없음", "당뇨식", "저염식", "기타"].map((x) => (
-                <Cb key={x} on={s2.therapeutic_diet === x} label={x} onToggle={() => u(["section2_health", "therapeutic_diet"], x)} />
+                <Cb key={x} on={s2.therapeutic_diet === x} label={x} onToggle={() => ut(["section2_health", "therapeutic_diet"], x)} />
               ))}
             </td>
           </tr>
           <tr>
             <th className="w-32">식사제공 유의사항</th>
-            <td colSpan={4}><EditText value={s2.meal_notes} onChange={(v) => u(["section2_health", "meal_notes"], v)} rows={2} /></td>
+            <td colSpan={4}><EditText value={s2.meal_notes} onChange={(v) => u(["section2_health", "meal_notes"], v)} heightMm={10} maxLen={100} /></td>
           </tr>
           <tr>
             <th>4) 영양상태</th>
             <td colSpan={5}>
-              <Cb on={s2.nutrition === "양호"} label="양호" onToggle={() => u(["section2_health", "nutrition"], "양호")} />
-              <Cb on={s2.nutrition?.startsWith("불량")} label="불량" onToggle={() => u(["section2_health", "nutrition"], "불량")} />
+              <Cb on={s2.nutrition === "양호"} label="양호" onToggle={() => ut(["section2_health", "nutrition"], "양호")} />
+              <Cb on={s2.nutrition?.startsWith("불량")} label="불량" onToggle={() => ut(["section2_health", "nutrition"], "불량")} />
               &nbsp;
               {["식욕부진", "체중감소", "체중과다", "기타"].map((x) => (
-                <Cb key={x} on={(s2.nutrition || "").includes(x)} label={x} onToggle={() => u(["section2_health", "nutrition"], `불량(${x})`)} />
+                <Cb key={x} on={(s2.nutrition || "").includes(x)} label={x} onToggle={() => ut(["section2_health", "nutrition"], `불량(${x})`)} />
               ))}
             </td>
           </tr>
           <tr><th colSpan={6} className="nf-sub-ko" style={{ background: "#fafafa" }}>라. 의견 및 판단근거</th></tr>
-          <tr><td colSpan={6}><EditText value={s2.opinion} onChange={(v) => u(["section2_health", "opinion"], v)} rows={4} /></td></tr>
+          <tr><td colSpan={6}><EditText value={s2.opinion} onChange={(v) => u(["section2_health", "opinion"], v)} heightMm={16} maxLen={150} /></td></tr>
         </tbody>
       </table>
     </section>
@@ -396,16 +411,18 @@ function DiseaseRow({ cat, items, path, data, t }: { cat: string; items: string[
     <tr>
       <th className="w-24">{cat}</th>
       <td colSpan={5}>
-        {items.map((it) => (
-          <Cb key={it} on={data.includes(it)} label={it} onToggle={() => t(path, it)} />
-        ))}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "2px 28px" }}>
+          {items.map((it) => (
+            <Cb key={it} on={data.includes(it)} label={it} onToggle={() => t(path, it)} />
+          ))}
+        </div>
       </td>
     </tr>
   );
 }
 
 // ============== PAGE 2 ==============
-function Page2({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: string[], i: string) => void }) {
+function Page2({ d, u, ut, t }: { d: Dict; u: (p: string[], v: any) => void; ut: (p: string[], v: any) => void; t: (p: string[], i: string) => void }) {
   const s3 = d.section3_adl ?? {};
   const s4 = d.section4_physical ?? {};
   const adlLeft = [
@@ -495,7 +512,7 @@ function Page2({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
             <th className="w-24">1) 배뇨기능</th>
             <td>
               {["양호", "요실금", "배뇨곤란(배뇨 시 통증, 배뇨지연 등)", "요의 느끼지 못함", "기타"].map((x) => (
-                <Cb key={x} on={s3.urination_function === x} label={x} onToggle={() => u(["section3_adl", "urination_function"], x)} />
+                <Cb key={x} on={s3.urination_function === x} label={x} onToggle={() => ut(["section3_adl", "urination_function"], x)} />
               ))}
             </td>
           </tr>
@@ -503,7 +520,7 @@ function Page2({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
             <th>2) 배뇨방법</th>
             <td>
               {["화장실", "이동변기", "기저귀", "배뇨관(유치도뇨관·방광루 등)", "기타"].map((x) => (
-                <Cb key={x} on={s3.urination_method === x} label={x} onToggle={() => u(["section3_adl", "urination_method"], x)} />
+                <Cb key={x} on={s3.urination_method === x} label={x} onToggle={() => ut(["section3_adl", "urination_method"], x)} />
               ))}
             </td>
           </tr>
@@ -512,7 +529,7 @@ function Page2({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
             <th>1) 배변기능</th>
             <td>
               {["양호", "변실금", "잦은 설사", "변비", "변의 느끼지 못함", "기타"].map((x) => (
-                <Cb key={x} on={s3.defecation_function === x} label={x} onToggle={() => u(["section3_adl", "defecation_function"], x)} />
+                <Cb key={x} on={s3.defecation_function === x} label={x} onToggle={() => ut(["section3_adl", "defecation_function"], x)} />
               ))}
             </td>
           </tr>
@@ -520,12 +537,12 @@ function Page2({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
             <th>2) 배변방법</th>
             <td>
               {["화장실", "이동변기", "기저귀", "장루", "기타"].map((x) => (
-                <Cb key={x} on={s3.defecation_method === x} label={x} onToggle={() => u(["section3_adl", "defecation_method"], x)} />
+                <Cb key={x} on={s3.defecation_method === x} label={x} onToggle={() => ut(["section3_adl", "defecation_method"], x)} />
               ))}
             </td>
           </tr>
           <tr><th colSpan={2} className="nf-sub-ko" style={{ background: "#fafafa" }}>바. 의견 및 판단근거</th></tr>
-          <tr><td colSpan={2}><EditText value={s3.opinion} onChange={(v) => u(["section3_adl", "opinion"], v)} /></td></tr>
+          <tr><td colSpan={2}><EditText value={s3.opinion} onChange={(v) => u(["section3_adl", "opinion"], v)} heightMm={16} maxLen={150} /></td></tr>
         </tbody>
       </table>
 
@@ -542,13 +559,13 @@ function Page2({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
             <tr key={k}>
               <th className="w-24">{l}</th>
               <td>
-                <Cb on={s4[k] === "없음"} label="없음" onToggle={() => u(["section4_physical", k], "없음")} />
-                <Cb on={s4[k]?.includes("상지")} label="상지(" onToggle={() => u(["section4_physical", k], "상지")} />
-                <Cb on={s4[`${k}_arm_left`]} label="좌" onToggle={() => u(["section4_physical", `${k}_arm_left`], !s4[`${k}_arm_left`])} />
-                <Cb on={s4[`${k}_arm_right`]} label="우" onToggle={() => u(["section4_physical", `${k}_arm_right`], !s4[`${k}_arm_right`])} />)
-                &nbsp;<Cb on={s4[k]?.includes("하지")} label="하지(" onToggle={() => u(["section4_physical", k], "하지")} />
-                <Cb on={s4[`${k}_leg_left`]} label="좌" onToggle={() => u(["section4_physical", `${k}_leg_left`], !s4[`${k}_leg_left`])} />
-                <Cb on={s4[`${k}_leg_right`]} label="우" onToggle={() => u(["section4_physical", `${k}_leg_right`], !s4[`${k}_leg_right`])} />)
+                <Cb on={s4[k] === "없음"} label="없음" onToggle={() => ut(["section4_physical", k], "없음")} />
+                <Cb on={s4[k]?.includes("상지")} label="상지(" onToggle={() => ut(["section4_physical", k], "상지")} />
+                <Cb on={s4[`${k}_arm_left`]} label="좌" onToggle={() => ut(["section4_physical", `${k}_arm_left`], !s4[`${k}_arm_left`])} />
+                <Cb on={s4[`${k}_arm_right`]} label="우" onToggle={() => ut(["section4_physical", `${k}_arm_right`], !s4[`${k}_arm_right`])} />)
+                &nbsp;<Cb on={s4[k]?.includes("하지")} label="하지(" onToggle={() => ut(["section4_physical", k], "하지")} />
+                <Cb on={s4[`${k}_leg_left`]} label="좌" onToggle={() => ut(["section4_physical", `${k}_leg_left`], !s4[`${k}_leg_left`])} />
+                <Cb on={s4[`${k}_leg_right`]} label="우" onToggle={() => ut(["section4_physical", `${k}_leg_right`], !s4[`${k}_leg_right`])} />)
                 &nbsp;부위( <EditInline value={s4[`${k}_site`]} onChange={(v) => u(["section4_physical", `${k}_site`], v)} width={120} /> )
               </td>
             </tr>
@@ -556,7 +573,7 @@ function Page2({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
           <tr><th className="w-24">나. 보행상태</th>
             <td>
               {["자립보행 가능", "보장구를 사용하여 자립보행 가능", "부축해주면 보행 가능", "보장구를 사용하여 부축을 받아 보행 가능", "보행 불가"].map((x) => (
-                <div key={x}><Cb on={s4.gait === x} label={x} onToggle={() => u(["section4_physical", "gait"], x)} /></div>
+                <div key={x}><Cb on={s4.gait === x} label={x} onToggle={() => ut(["section4_physical", "gait"], x)} /></div>
               ))}
               <div className="mt-1">보장구 종류 &nbsp;
                 {["지팡이", "성인용 보행기", "휠체어", "기타"].map((x) => (
@@ -568,8 +585,8 @@ function Page2({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
           <tr>
             <th>다. 지난 3개월<br />간 낙상</th>
             <td>
-              <Cb on={!s4.falls_3mo} label="없음" onToggle={() => u(["section4_physical", "falls_3mo"], 0)} />
-              <Cb on={(s4.falls_3mo ?? 0) > 0} label="있음" onToggle={() => u(["section4_physical", "falls_3mo"], s4.falls_3mo ? 0 : 1)} />
+              <Cb on={!s4.falls_3mo} label="없음" onToggle={() => ut(["section4_physical", "falls_3mo"], 0)} />
+              <Cb on={(s4.falls_3mo ?? 0) > 0} label="있음" onToggle={() => ut(["section4_physical", "falls_3mo"], s4.falls_3mo ? 0 : 1)} />
               (횟수: <EditInline value={s4.falls_3mo} onChange={(v) => u(["section4_physical", "falls_3mo"], Number(v) || 0)} width={40} /> )
             </td>
           </tr>
@@ -597,7 +614,7 @@ function Page2({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
             </td>
           </tr>
           <tr><th colSpan={2} className="nf-sub-ko" style={{ background: "#fafafa" }}>마. 의견 및 판단근거</th></tr>
-          <tr><td colSpan={2}><EditText value={s4.opinion} onChange={(v) => u(["section4_physical", "opinion"], v)} /></td></tr>
+          <tr><td colSpan={2}><EditText value={s4.opinion} onChange={(v) => u(["section4_physical", "opinion"], v)} heightMm={16} maxLen={150} /></td></tr>
         </tbody>
       </table>
     </section>
@@ -605,7 +622,7 @@ function Page2({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
 }
 
 // ============== PAGE 3 ==============
-function Page3({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: string[], i: string) => void }) {
+function Page3({ d, u, ut, t }: { d: Dict; u: (p: string[], v: any) => void; ut: (p: string[], v: any) => void; t: (p: string[], i: string) => void }) {
   const s5 = d.section5_nursing ?? {};
   const s6 = d.section6_cognition ?? {};
 
@@ -619,32 +636,32 @@ function Page3({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
           <tr>
             <th className="w-24">나. 피부간호</th>
             <td>
-              <Cb on={s5.skin === "없음"} label="없음" onToggle={() => u(["section5_nursing", "skin"], "없음")} />
-              <Cb on={s5.skin?.startsWith("욕창")} label="욕창" onToggle={() => u(["section5_nursing", "skin"], "욕창")} />
+              <Cb on={s5.skin === "없음"} label="없음" onToggle={() => ut(["section5_nursing", "skin"], "없음")} />
+              <Cb on={s5.skin?.startsWith("욕창")} label="욕창" onToggle={() => ut(["section5_nursing", "skin"], "욕창")} />
               (부위: <EditInline value={s5.skin_site} onChange={(v) => u(["section5_nursing", "skin_site"], v)} width={80} />,
               {["1단계", "2단계", "3단계", "4단계"].map((x) => (
-                <Cb key={x} on={s5.skin_stage === x} label={x} onToggle={() => u(["section5_nursing", "skin_stage"], x)} />
+                <Cb key={x} on={s5.skin_stage === x} label={x} onToggle={() => ut(["section5_nursing", "skin_stage"], x)} />
               ))})
-              <Cb on={s5.skin === "말초신경병증궤양"} label="말초신경병증궤양(당뇨발 등)" onToggle={() => u(["section5_nursing", "skin"], "말초신경병증궤양")} />
-              <Cb on={s5.skin === "화상"} label="화상" onToggle={() => u(["section5_nursing", "skin"], "화상")} />
-              <Cb on={s5.skin === "소양증"} label="소양증" onToggle={() => u(["section5_nursing", "skin"], "소양증")} />
-              <Cb on={s5.skin === "기타"} label="기타" onToggle={() => u(["section5_nursing", "skin"], "기타")} />
+              <Cb on={s5.skin === "말초신경병증궤양"} label="말초신경병증궤양(당뇨발 등)" onToggle={() => ut(["section5_nursing", "skin"], "말초신경병증궤양")} />
+              <Cb on={s5.skin === "화상"} label="화상" onToggle={() => ut(["section5_nursing", "skin"], "화상")} />
+              <Cb on={s5.skin === "소양증"} label="소양증" onToggle={() => ut(["section5_nursing", "skin"], "소양증")} />
+              <Cb on={s5.skin === "기타"} label="기타" onToggle={() => ut(["section5_nursing", "skin"], "기타")} />
             </td>
           </tr>
           <NursingRow label="다. 소화기간호" val={s5.digestive} items={["없음", "비위관", "위관", "기타"]} onChange={(v) => u(["section5_nursing", "digestive"], v)} />
           <tr>
             <th>라. 통증간호</th>
             <td>
-              <div><Cb on={s5.pain_type === "없음"} label="없음" onToggle={() => u(["section5_nursing", "pain_type"], "없음")} /></div>
-              <div><Cb on={s5.pain_type === "일반통증"} label="일반통증(부위:" onToggle={() => u(["section5_nursing", "pain_type"], "일반통증")} /> <EditInline value={s5.pain_site} onChange={(v) => u(["section5_nursing", "pain_site"], v)} width={80} /> , 정도: <EditInline value={s5.pain_score} onChange={(v) => u(["section5_nursing", "pain_score"], Number(v) || 0)} width={40} /> 점)</div>
-              <div><Cb on={s5.pain_type === "암성통증"} label="암성통증(부위:" onToggle={() => u(["section5_nursing", "pain_type"], "암성통증")} /> <EditInline value={s5.pain_cancer_site} onChange={(v) => u(["section5_nursing", "pain_cancer_site"], v)} width={80} /> , 정도: <EditInline value={s5.pain_cancer_score} onChange={(v) => u(["section5_nursing", "pain_cancer_score"], v)} width={40} /> 점)</div>
+              <div><Cb on={s5.pain_type === "없음"} label="없음" onToggle={() => ut(["section5_nursing", "pain_type"], "없음")} /></div>
+              <div><Cb on={s5.pain_type === "일반통증"} label="일반통증(부위:" onToggle={() => ut(["section5_nursing", "pain_type"], "일반통증")} /> <EditInline value={s5.pain_site} onChange={(v) => u(["section5_nursing", "pain_site"], v)} width={80} /> , 정도: <EditInline value={s5.pain_score} onChange={(v) => u(["section5_nursing", "pain_score"], Number(v) || 0)} width={40} /> 점)</div>
+              <div><Cb on={s5.pain_type === "암성통증"} label="암성통증(부위:" onToggle={() => ut(["section5_nursing", "pain_type"], "암성통증")} /> <EditInline value={s5.pain_cancer_site} onChange={(v) => u(["section5_nursing", "pain_cancer_site"], v)} width={80} /> , 정도: <EditInline value={s5.pain_cancer_score} onChange={(v) => u(["section5_nursing", "pain_cancer_score"], v)} width={40} /> 점)</div>
               <div>통증빈도 &nbsp;
-                <Cb on={s5.pain_freq === "일1회 이상"} label="일1회 이상" onToggle={() => u(["section5_nursing", "pain_freq"], "일1회 이상")} />
-                <Cb on={s5.pain_freq === "주 1회 이상"} label="주 1회 이상" onToggle={() => u(["section5_nursing", "pain_freq"], "주 1회 이상")} />
+                <Cb on={s5.pain_freq === "일1회 이상"} label="일1회 이상" onToggle={() => ut(["section5_nursing", "pain_freq"], "일1회 이상")} />
+                <Cb on={s5.pain_freq === "주 1회 이상"} label="주 1회 이상" onToggle={() => ut(["section5_nursing", "pain_freq"], "주 1회 이상")} />
               </div>
               <div>통증관리 &nbsp;
                 {["일반진통제", "마약성 경구 진통제", "마약성 주사제", "마약성 진통제 패치", "냉·온 요법", "기타"].map((x) => (
-                  <Cb key={x} on={s5.pain_manage === x} label={x} onToggle={() => u(["section5_nursing", "pain_manage"], x)} />
+                  <Cb key={x} on={s5.pain_manage === x} label={x} onToggle={() => ut(["section5_nursing", "pain_manage"], x)} />
                 ))}
               </div>
             </td>
@@ -653,7 +670,7 @@ function Page3({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
           <NursingRow label="바. 배변간호" val={s5.defecation_care} items={["없음", "장루", "관장", "기타"]} onChange={(v) => u(["section5_nursing", "defecation_care"], v)} />
           <NursingRow label="사. 내분비간호" val={s5.endocrine} items={["없음", "인슐린투여", "기타"]} onChange={(v) => u(["section5_nursing", "endocrine"], v)} />
           <tr><th colSpan={2} className="nf-sub-ko" style={{ background: "#fafafa" }}>아. 의견 및 판단근거</th></tr>
-          <tr><td colSpan={2}><EditText value={s5.opinion} onChange={(v) => u(["section5_nursing", "opinion"], v)} /></td></tr>
+          <tr><td colSpan={2}><EditText value={s5.opinion} onChange={(v) => u(["section5_nursing", "opinion"], v)} heightMm={16} maxLen={150} /></td></tr>
         </tbody>
       </table>
 
@@ -708,7 +725,7 @@ function Page3({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
           <ScaleRow label="3) 시력상태" sub="안경사용" subOn={!!s6.glasses} onSubToggle={() => u(["section6_cognition", "glasses"], !s6.glasses)} options={["정상", "1미터 거리 보임", "근접한 사물 보임", "보이지 않음", "판단불능"]} value={s6.comm_vision} onChange={(v) => u(["section6_cognition", "comm_vision"], v)} />
           <ScaleRow label="4) 청력상태" sub="보청기 사용" subOn={!!s6.hearing_aid} onSubToggle={() => u(["section6_cognition", "hearing_aid"], !s6.hearing_aid)} options={["정상", "먼 곳의 소리는 들리지 않음", "큰 소리만 들림", "들리지 않음", "판단불능"]} value={s6.comm_hearing} onChange={(v) => u(["section6_cognition", "comm_hearing"], v)} />
           <tr><th colSpan={2} className="nf-sub-ko" style={{ background: "#fafafa" }}>마. 의견 및 판단근거</th></tr>
-          <tr><td colSpan={2}><EditText value={s6.opinion} onChange={(v) => u(["section6_cognition", "opinion"], v)} /></td></tr>
+          <tr><td colSpan={2}><EditText value={s6.opinion} onChange={(v) => u(["section6_cognition", "opinion"], v)} heightMm={16} maxLen={150} /></td></tr>
         </tbody>
       </table>
     </section>
@@ -742,7 +759,7 @@ function ScaleRow({ label, options, value, onChange, sub, subOn, onSubToggle }: 
 }
 
 // ============== PAGE 4 ==============
-function Page4({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: string[], i: string) => void }) {
+function Page4({ d, u, ut, t }: { d: Dict; u: (p: string[], v: any) => void; ut: (p: string[], v: any) => void; t: (p: string[], i: string) => void }) {
   const s7 = d.section7_support ?? {};
   const s8 = d.section8_environment ?? {};
 
@@ -766,7 +783,7 @@ function Page4({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
             <th className="w-24">1) 수급자의<br />주거형태</th>
             <td>
               {["자택", "노인요양시설(노인요양공동생활가정 포함)", "양로시설", "요양병원", "기타"].map((x) => (
-                <Cb key={x} on={s7.residence === x} label={x} onToggle={() => u(["section7_support", "residence"], x)} />
+                <Cb key={x} on={s7.residence === x} label={x} onToggle={() => ut(["section7_support", "residence"], x)} />
               ))}
             </td>
           </tr>
@@ -792,12 +809,12 @@ function Page4({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
             <th rowSpan={2}>2) 주 수발자</th>
             <td>
               <div>
-                <Cb on={s7.primary_caregiver_present === false} label="없음" onToggle={() => u(["section7_support", "primary_caregiver_present"], false)} />
-                <Cb on={!!s7.primary_caregiver_present} label="있음" onToggle={() => u(["section7_support", "primary_caregiver_present"], true)} />
+                <Cb on={s7.primary_caregiver_present === false} label="없음" onToggle={() => ut(["section7_support", "primary_caregiver_present"], false)} />
+                <Cb on={!!s7.primary_caregiver_present} label="있음" onToggle={() => ut(["section7_support", "primary_caregiver_present"], true)} />
               </div>
               <div>가) 주 수발자의 관계 &nbsp;
                 {["배우자", "자녀", "며느리·사위", "형제·자매", "손자녀", "부모", "친척", "기타"].map((x) => (
-                  <Cb key={x} on={s7.primary_caregiver_relation === x} label={x} onToggle={() => u(["section7_support", "primary_caregiver_relation"], x)} />
+                  <Cb key={x} on={s7.primary_caregiver_relation === x} label={x} onToggle={() => ut(["section7_support", "primary_caregiver_relation"], x)} />
                 ))}
               </div>
             </td>
@@ -805,28 +822,28 @@ function Page4({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
           <tr>
             <td>나) 주 수발자의 부양부담 &nbsp;
               {["전혀 부담되지 않음", "아주 가끔 부담됨", "가끔 부담됨", "자주부담됨", "항상 부담됨"].map((x) => (
-                <Cb key={x} on={s7.primary_caregiver_burden === x} label={x} onToggle={() => u(["section7_support", "primary_caregiver_burden"], x)} />
+                <Cb key={x} on={s7.primary_caregiver_burden === x} label={x} onToggle={() => ut(["section7_support", "primary_caregiver_burden"], x)} />
               ))}
             </td>
           </tr>
           <tr>
             <th rowSpan={3}>3) 수급자의<br />사회적교류</th>
             <td>하루종일 혼자있음 &nbsp;
-              <Cb on={s7.alone_all_day === true} label="예" onToggle={() => u(["section7_support", "alone_all_day"], true)} />
-              <Cb on={s7.alone_all_day === false} label="아니오" onToggle={() => u(["section7_support", "alone_all_day"], false)} />
+              <Cb on={s7.alone_all_day === true} label="예" onToggle={() => ut(["section7_support", "alone_all_day"], true)} />
+              <Cb on={s7.alone_all_day === false} label="아니오" onToggle={() => ut(["section7_support", "alone_all_day"], false)} />
             </td>
           </tr>
           <tr>
             <td>가족 교류 &nbsp;
               {["주1~2회", "월1~2회", "분기1~2회", "연1~2회", "없음"].map((x) => (
-                <Cb key={x} on={s7.social_family === x} label={x} onToggle={() => u(["section7_support", "social_family"], x)} />
+                <Cb key={x} on={s7.social_family === x} label={x} onToggle={() => ut(["section7_support", "social_family"], x)} />
               ))}
             </td>
           </tr>
           <tr>
             <td>친구·이웃 교류 &nbsp;
               {["주1~2회", "월1~2회", "분기1~2회", "연1~2회", "없음"].map((x) => (
-                <Cb key={x} on={s7.social_friends === x} label={x} onToggle={() => u(["section7_support", "social_friends"], x)} />
+                <Cb key={x} on={s7.social_friends === x} label={x} onToggle={() => ut(["section7_support", "social_friends"], x)} />
               ))}
             </td>
           </tr>
@@ -852,7 +869,7 @@ function Page4({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
             </td>
           </tr>
           <tr><th colSpan={2} className="nf-sub-ko" style={{ background: "#fafafa" }}>라. 의견 및 판단근거</th></tr>
-          <tr><td colSpan={2}><EditText value={s7.opinion} onChange={(v) => u(["section7_support", "opinion"], v)} /></td></tr>
+          <tr><td colSpan={2}><EditText value={s7.opinion} onChange={(v) => u(["section7_support", "opinion"], v)} heightMm={16} maxLen={150} /></td></tr>
         </tbody>
       </table>
 
@@ -863,7 +880,7 @@ function Page4({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
             <th className="w-32">가. 수급자가 거주하는 곳의 층수</th>
             <td colSpan={3}>
               {["지층", "1층", "2층", "3층 이상"].map((x) => (
-                <Cb key={x} on={s8.floor === x} label={x} onToggle={() => u(["section8_environment", "floor"], x)} />
+                <Cb key={x} on={s8.floor === x} label={x} onToggle={() => ut(["section8_environment", "floor"], x)} />
               ))}
             </td>
           </tr>
@@ -903,7 +920,7 @@ function Page4({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
             </tr>
           ))}
           <tr><th colSpan={4} className="nf-sub-ko" style={{ background: "#fafafa" }}>다. 의견 및 판단근거</th></tr>
-          <tr><td colSpan={4}><EditText value={s8.opinion} onChange={(v) => u(["section8_environment", "opinion"], v)} /></td></tr>
+          <tr><td colSpan={4}><EditText value={s8.opinion} onChange={(v) => u(["section8_environment", "opinion"], v)} heightMm={16} maxLen={150} /></td></tr>
         </tbody>
       </table>
     </section>
@@ -911,89 +928,124 @@ function Page4({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: 
 }
 
 // ============== PAGE 5 ==============
-function Page5({ d, u, t }: { d: Dict; u: (p: string[], v: any) => void; t: (p: string[], i: string) => void }) {
+function Page5({ d, u, ut, t }: { d: Dict; u: (p: string[], v: any) => void; ut: (p: string[], v: any) => void; t: (p: string[], i: string) => void }) {
   const s9 = d.section9_desired ?? {};
   const s10 = d.section10_summary ?? {};
 
-  const DG = (path: string[], items: string[]) => (
-    <td>{items.map((x) => <Cb key={x} on={(((d as any)[path[0]] ?? {})[path[1]] ?? []).includes(x)} label={x} onToggle={() => t(path, x)} />)}</td>
-  );
+  const has = (arr: any, x: string) => Array.isArray(arr) && arr.includes(x);
+  const phy = s9.physical ?? [];
+  const dly = s9.daily ?? [];
 
   return (
     <section className="nf-page">
       <div className="nf-page-num">5 / 5</div>
       <div className="nf-section-bar">9. 수급자 및 보호자가 희망하는 서비스</div>
-      <table className="nf-table">
-        <tbody>
-          <tr><th className="w-32">가. 신체활동지원</th>
-            <td>
-              <div>
-                개인위생(
-                {["세면", "구강청결", "몸단장", "머리감기", "옷갈아입기"].map((x) => (
-                  <Cb key={x} on={(s9.physical ?? []).includes(`개인위생 ${x}`)} label={x} onToggle={() => t(["section9_desired", "physical"], `개인위생 ${x}`)} />
-                ))}
-                도움)
-              </div>
-              <div>
-                <Cb on={(s9.physical ?? []).includes("몸 씻기(목욕)")} label="몸 씻기(목욕)" onToggle={() => t(["section9_desired", "physical"], "몸 씻기(목욕)")} />
-                <Cb on={(s9.physical ?? []).includes("체위변경하기")} label="체위변경하기" onToggle={() => t(["section9_desired", "physical"], "체위변경하기")} />
-                <Cb on={(s9.physical ?? []).includes("식사하기(식사도움)")} label="식사하기(식사도움)" onToggle={() => t(["section9_desired", "physical"], "식사하기(식사도움)")} />
-              </div>
-              <div>
-                <Cb on={(s9.physical ?? []).includes("이동도움(부축, 휠체어 등)")} label="이동도움(부축, 휠체어 등)" onToggle={() => t(["section9_desired", "physical"], "이동도움(부축, 휠체어 등)")} />
-                <Cb on={(s9.physical ?? []).includes("화장실 이용하기(이동변기, 기저귀 교환 등)")} label="화장실 이용하기(이동변기, 기저귀 교환 등)" onToggle={() => t(["section9_desired", "physical"], "화장실 이용하기(이동변기, 기저귀 교환 등)")} />
-              </div>
-            </td>
-          </tr>
-          <tr><th>나. 일상생활 지원</th>
-            <td>
-              <div>
-                <Cb on={(s9.daily ?? []).includes("식사 준비 및 정리")} label="식사 준비 및 정리" onToggle={() => t(["section9_desired", "daily"], "식사 준비 및 정리")} />
-                <Cb on={(s9.daily ?? []).includes("청소·주변정돈")} label="청소·주변정돈" onToggle={() => t(["section9_desired", "daily"], "청소·주변정돈")} />
-                <Cb on={(s9.daily ?? []).includes("의복 세탁 및 관리")} label="의복 세탁 및 관리" onToggle={() => t(["section9_desired", "daily"], "의복 세탁 및 관리")} />
-                <Cb on={(s9.daily ?? []).includes("장보기")} label="장보기" onToggle={() => t(["section9_desired", "daily"], "장보기")} />
-              </div>
-              <div>
-                <Cb on={(s9.daily ?? []).includes("복약도움")} label="복약도움" onToggle={() => t(["section9_desired", "daily"], "복약도움")} />
-                <Cb on={(s9.daily ?? []).includes("외출 동행")} label="외출 동행(" onToggle={() => t(["section9_desired", "daily"], "외출 동행")} />
-                {["병원", "관공서", "산책", "기타"].map((x) => (
-                  <Cb key={x} on={(s9.daily ?? []).includes(`외출 동행 ${x}`)} label={x} onToggle={() => t(["section9_desired", "daily"], `외출 동행 ${x}`)} />
-                ))})
-              </div>
-            </td>
-          </tr>
-          <tr><th>다. 기능회복훈련</th>
-            {DG(["section9_desired", "rehab"], ["신체기능 훈련", "일상생활 동작 훈련", "인지기능 향상 훈련", "여가·정서프로그램", "물리치료", "작업치료", "기타"])}
-          </tr>
-          <tr><th>라. 인지관리 및 정서지원</th>
-            {DG(["section9_desired", "cognition"], ["인지관리지원", "정서지원", "기타"])}
-          </tr>
-          <tr><th>마. 건강 및 간호관리</th>
-            {DG(["section9_desired", "health"], ["건강관리(투약관리 및 기초건강관리 등)", "간호관리(욕창, 통증, 호흡기, 구강간호 등)"])}
-          </tr>
-          <tr><th>바. 방문목욕</th>
-            {DG(["section9_desired", "bath"], ["차량을 이용한 방문목욕", "차량을 이용하지 않은 방문목욕"])}
-          </tr>
-          <tr><th>사. 복지용구</th>
-            <td>희망품목( <EditInline value={(s9.aids ?? []).join(", ")} onChange={(v) => u(["section9_desired", "aids"], v.split(",").map((x: string) => x.trim()).filter(Boolean))} width={400} /> )</td>
-          </tr>
-          <tr><th>아. 장기요양급여 외<br />희망하는 지역사회 자원</th>
-            {DG(["section9_desired", "community"], ["없음", "노인복지관", "식사지원(급식 및 도시락 배달 등)", "주거지원서비스(도배, 장판, 주택개조 등)", "장애인활동지원서비스", "보건의료서비스(보건소, 치매안심센터 등)", "이동지원서비스(차량지원, 무료택시 등)", "이미용서비스", "종교단체 지원", "기타"])}
-          </tr>
-          <tr><th colSpan={2} className="nf-sub-ko" style={{ background: "#fafafa" }}>자. 의견 및 판단근거</th></tr>
-          <tr><td colSpan={2}><EditText value={s9.opinion} onChange={(v) => u(["section9_desired", "opinion"], v)} rows={3} /></td></tr>
-        </tbody>
-      </table>
+      <div className="nf-free">
+        <div className="nf-sub-label">가. 신체활동지원</div>
+        <div className="nf-row">
+          개인위생(
+          {["세면", "구강청결", "몸단장", "머리감기", "옷갈아입기"].map((x) => (
+            <Cb key={x} on={has(phy, `개인위생 ${x}`)} label={x} onToggle={() => t(["section9_desired", "physical"], `개인위생 ${x}`)} />
+          ))}
+          도움)
+        </div>
+        <div className="nf-row">
+          <Cb on={has(phy, "몸 씻기(목욕)")} label="몸 씻기(목욕)" onToggle={() => t(["section9_desired", "physical"], "몸 씻기(목욕)")} />
+          <Cb on={has(phy, "체위변경하기")} label="체위변경하기" onToggle={() => t(["section9_desired", "physical"], "체위변경하기")} />
+          <Cb on={has(phy, "식사하기(식사도움)")} label="식사하기(식사도움)" onToggle={() => t(["section9_desired", "physical"], "식사하기(식사도움)")} />
+        </div>
+        <div className="nf-row">
+          <Cb on={has(phy, "이동도움(부축, 휠체어 등)")} label="이동도움(부축, 휠체어 등)" onToggle={() => t(["section9_desired", "physical"], "이동도움(부축, 휠체어 등)")} />
+          <Cb on={has(phy, "화장실 이용하기(이동변기, 기저귀 교환 등)")} label="화장실 이용하기(이동변기, 기저귀 교환 등)" onToggle={() => t(["section9_desired", "physical"], "화장실 이용하기(이동변기, 기저귀 교환 등)")} />
+        </div>
+
+        <div className="nf-sub-label">나. 일상생활 지원</div>
+        <div className="nf-row">
+          <Cb on={has(dly, "식사 준비 및 정리")} label="식사 준비 및 정리" onToggle={() => t(["section9_desired", "daily"], "식사 준비 및 정리")} />
+          <Cb on={has(dly, "청소·주변정돈")} label="청소·주변정돈" onToggle={() => t(["section9_desired", "daily"], "청소·주변정돈")} />
+          <Cb on={has(dly, "의복 세탁 및 관리")} label="의복 세탁 및 관리" onToggle={() => t(["section9_desired", "daily"], "의복 세탁 및 관리")} />
+          <Cb on={has(dly, "장보기")} label="장보기" onToggle={() => t(["section9_desired", "daily"], "장보기")} />
+        </div>
+        <div className="nf-row">
+          <Cb on={has(dly, "복약도움")} label="복약도움" onToggle={() => t(["section9_desired", "daily"], "복약도움")} />
+          <Cb on={has(dly, "외출 동행")} label="외출 동행(" onToggle={() => t(["section9_desired", "daily"], "외출 동행")} />
+          {["병원", "관공서", "산책", "기타"].map((x) => (
+            <Cb key={x} on={has(dly, `외출 동행 ${x}`)} label={x} onToggle={() => t(["section9_desired", "daily"], `외출 동행 ${x}`)} />
+          ))})
+        </div>
+
+        <div className="nf-sub-label">다. 기능회복훈련</div>
+        <div className="nf-row">
+          {["신체기능 훈련", "일상생활 동작 훈련"].map((x) => (
+            <Cb key={x} on={has(s9.rehab, x)} label={x} onToggle={() => t(["section9_desired", "rehab"], x)} />
+          ))}
+        </div>
+        <div className="nf-row">
+          {["인지기능 향상 훈련", "여가·정서프로그램"].map((x) => (
+            <Cb key={x} on={has(s9.rehab, x)} label={x} onToggle={() => t(["section9_desired", "rehab"], x)} />
+          ))}
+        </div>
+        <div className="nf-row">
+          {["물리치료", "작업치료"].map((x) => (
+            <Cb key={x} on={has(s9.rehab, x)} label={x} onToggle={() => t(["section9_desired", "rehab"], x)} />
+          ))}
+        </div>
+        <div className="nf-row">
+          <Cb on={has(s9.rehab, "기타")} label="기타(" onToggle={() => t(["section9_desired", "rehab"], "기타")} /> )
+        </div>
+
+        <div className="nf-sub-label">라. 인지관리 및 정서지원</div>
+        <div className="nf-row">
+          <Cb on={has(s9.cognition, "인지관리지원")} label="인지관리지원" onToggle={() => t(["section9_desired", "cognition"], "인지관리지원")} />
+          <Cb on={has(s9.cognition, "정서지원")} label="정서지원" onToggle={() => t(["section9_desired", "cognition"], "정서지원")} />
+        </div>
+        <div className="nf-row"><Cb on={has(s9.cognition, "기타")} label="기타(" onToggle={() => t(["section9_desired", "cognition"], "기타")} /> )</div>
+
+        <div className="nf-sub-label">마. 건강 및 간호관리</div>
+        <div className="nf-row">
+          <Cb on={has(s9.health, "건강관리(투약관리 및 기초건강관리 등)")} label="건강관리(투약관리 및 기초건강관리 등)" onToggle={() => t(["section9_desired", "health"], "건강관리(투약관리 및 기초건강관리 등)")} />
+          <Cb on={has(s9.health, "간호관리(욕창, 통증, 호흡기, 구강간호 등)")} label="간호관리(욕창, 통증, 호흡기, 구강간호 등)" onToggle={() => t(["section9_desired", "health"], "간호관리(욕창, 통증, 호흡기, 구강간호 등)")} />
+        </div>
+
+        <div className="nf-sub-label">바. 방문목욕</div>
+        <div className="nf-row">
+          <Cb on={has(s9.bath, "차량을 이용한 방문목욕")} label="차량을 이용한 방문목욕" onToggle={() => t(["section9_desired", "bath"], "차량을 이용한 방문목욕")} />
+          <Cb on={has(s9.bath, "차량을 이용하지 않은 방문목욕")} label="차량을 이용하지 않은 방문목욕" onToggle={() => t(["section9_desired", "bath"], "차량을 이용하지 않은 방문목욕")} />
+        </div>
+
+        <div className="nf-sub-label">사. 복지용구</div>
+        <div className="nf-row">
+          희망품목( <EditInline value={(s9.aids ?? []).join(", ")} onChange={(v) => u(["section9_desired", "aids"], v.split(",").map((x: string) => x.trim()).filter(Boolean))} width={400} /> )
+        </div>
+
+        <div className="nf-sub-label">아. 장기요양급여 외 희망하는 지역사회 자원</div>
+        <div className="nf-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" }}>
+          {[
+            ["없음", "보건의료서비스(보건소, 치매안심센터 등)"],
+            ["노인복지관", "이동지원서비스(차량지원, 무료택시 등)"],
+            ["식사지원(급식 및 도시락 배달 등)", "이미용서비스"],
+            ["주거지원서비스(도배, 장판, 주택개조 등)", "종교단체 지원"],
+          ].flat().map((x) => (
+            <div key={x}><Cb on={has(s9.community, x)} label={x} onToggle={() => t(["section9_desired", "community"], x)} /></div>
+          ))}
+          <div><Cb on={has(s9.community, "기타")} label="기타(" onToggle={() => t(["section9_desired", "community"], "기타")} /> )</div>
+        </div>
+
+        <div className="nf-sub-label">자. 의견 및 판단근거</div>
+        <EditText value={s9.opinion} onChange={(v) => u(["section9_desired", "opinion"], v)} heightMm={16} maxLen={150} />
+      </div>
 
       <div className="nf-section-bar">10. 종합의견</div>
-      <table className="nf-table nf-summary">
-        <tbody>
-          <tr><th className="w-32">1. 건강상태</th><td><EditText value={s10.health} onChange={(v) => u(["section10_summary", "health"], v)} rows={4} /></td></tr>
-          <tr><th>2. 생활기능 및 신체기능</th><td><EditText value={s10.function} onChange={(v) => u(["section10_summary", "function"], v)} rows={4} /></td></tr>
-          <tr><th>3. 인지 및 의사소통</th><td><EditText value={s10.cognition} onChange={(v) => u(["section10_summary", "cognition"], v)} rows={4} /></td></tr>
-          <tr><th>4. 장기요양급여 제공계획서방향</th><td><EditText value={s10.care_plan_direction} onChange={(v) => u(["section10_summary", "care_plan_direction"], v)} rows={4} /></td></tr>
-        </tbody>
-      </table>
+      <div className="nf-free nf-summary">
+        <div className="nf-sub-label">1. 건강상태</div>
+        <EditText value={s10.health} onChange={(v) => u(["section10_summary", "health"], v)} heightMm={14} maxLen={180} />
+        <div className="nf-sub-label">2. 생활기능 및 신체기능</div>
+        <EditText value={s10.function} onChange={(v) => u(["section10_summary", "function"], v)} heightMm={14} maxLen={180} />
+        <div className="nf-sub-label">3. 인지 및 의사소통</div>
+        <EditText value={s10.cognition} onChange={(v) => u(["section10_summary", "cognition"], v)} heightMm={14} maxLen={180} />
+        <div className="nf-sub-label">4. 장기요양급여 제공계획서방향</div>
+        <EditText value={s10.care_plan_direction} onChange={(v) => u(["section10_summary", "care_plan_direction"], v)} heightMm={14} maxLen={180} />
+      </div>
     </section>
   );
 }

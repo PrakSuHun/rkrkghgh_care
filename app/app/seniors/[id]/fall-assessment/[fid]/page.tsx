@@ -81,7 +81,8 @@ export default function FallAssessmentPage() {
     router.push(`/seniors/${id}`);
   };
 
-  const dateStr = new Date(a.assessed_at).toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" });
+  const d = new Date(a.assessed_at);
+  const dateStr = `${d.getFullYear()}년 ${String(d.getMonth() + 1).padStart(2, "0")}월 ${String(d.getDate()).padStart(2, "0")}일`;
 
   return (
     <>
@@ -162,7 +163,7 @@ export default function FallAssessmentPage() {
                 <p>※ 척도(합계점수 해석)</p>
                 <p>&nbsp;&nbsp;· 4점 이하 : 낙상위험 낮음</p>
                 <p>&nbsp;&nbsp;· 5-10점 : 낙상위험 높음 &nbsp;&nbsp; · <strong>11점 이상 : 낙상위험 아주 높음</strong></p>
-                {a.interpretation && <p className="mt-1 font-bold text-indigo-700">→ 현재: {a.interpretation}</p>}
+                {a.interpretation && <p className="mt-1 font-bold text-indigo-700 no-print">→ 현재: {a.interpretation}</p>}
               </td>
             </tr>
             <tr>

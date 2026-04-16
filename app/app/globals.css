@@ -99,12 +99,17 @@ button, a {
   font-size: 11pt;
 }
 .nf-sub-ko { font-weight: 700; margin-top: 6px; }
+.nf-free { padding: 2px 2px; }
+.nf-free .nf-sub-label { font-weight: 700; margin-top: 3px; margin-bottom: 1px; font-size: 10pt; }
+.nf-free .nf-row { margin: 1px 0; padding-left: 4px; }
+.nf-free textarea.nf-edit-text { padding: 1px 4px; border: 0 !important; }
 .nf-cb {
   white-space: nowrap;
-  margin-right: 8px;
+  margin-right: 20px;
   display: inline-block;
   cursor: pointer;
   user-select: none;
+  padding: 1px 2px;
 }
 .nf-cb:hover { background: #fef9c3; }
 .nf-cb-inline { white-space: nowrap; }
@@ -138,6 +143,8 @@ button, a {
 .nf-page-num { text-align: center; font-size: 9pt; margin-top: 6px; color: #555; }
 @media print {
   .nf-cb:hover, .nf-score-cell:hover, .nf-edit-text:hover, .nf-edit-inline:hover { background: transparent; }
+  .bg-yellow-200, .bg-yellow-100, .bg-yellow-50 { background: transparent !important; }
+  .nf-score-cell.on { background: transparent !important; }
 
   @page { size: A4 portrait; margin: 10mm; }
 
@@ -189,7 +196,7 @@ button, a {
     resize: none !important;
   }
   .nf-edit-text { max-height: 30mm; overflow: hidden !important; }
-  .nf-cb { font-size: 9pt !important; margin-right: 4px !important; }
+  .nf-cb { font-size: 9pt !important; margin-right: 14px !important; }
   .page-break { display: none !important; }
   .nf-page-num {
     font-size: 8pt !important;
