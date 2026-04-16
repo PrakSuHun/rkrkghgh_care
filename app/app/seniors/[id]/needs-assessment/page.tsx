@@ -941,25 +941,28 @@ function Page5({ d, u, ut, t }: { d: Dict; u: (p: string[], v: any) => void; ut:
       <div className="nf-page-num">5 / 5</div>
       <div className="nf-section-bar">9. 수급자 및 보호자가 희망하는 서비스</div>
       <div className="nf-free">
-        <div className="nf-sub-label">가. 신체활동지원</div>
-        <div className="nf-row">
-          개인위생(
-          {["세면", "구강청결", "몸단장", "머리감기", "옷갈아입기"].map((x) => (
-            <Cb key={x} on={has(phy, `개인위생 ${x}`)} label={x} onToggle={() => t(["section9_desired", "physical"], `개인위생 ${x}`)} />
-          ))}
-          도움)
-        </div>
-        <div className="nf-row">
-          <Cb on={has(phy, "몸 씻기(목욕)")} label="몸 씻기(목욕)" onToggle={() => t(["section9_desired", "physical"], "몸 씻기(목욕)")} />
-          <Cb on={has(phy, "체위변경하기")} label="체위변경하기" onToggle={() => t(["section9_desired", "physical"], "체위변경하기")} />
-          <Cb on={has(phy, "식사하기(식사도움)")} label="식사하기(식사도움)" onToggle={() => t(["section9_desired", "physical"], "식사하기(식사도움)")} />
-        </div>
-        <div className="nf-row">
-          <Cb on={has(phy, "이동도움(부축, 휠체어 등)")} label="이동도움(부축, 휠체어 등)" onToggle={() => t(["section9_desired", "physical"], "이동도움(부축, 휠체어 등)")} />
-          <Cb on={has(phy, "화장실 이용하기(이동변기, 기저귀 교환 등)")} label="화장실 이용하기(이동변기, 기저귀 교환 등)" onToggle={() => t(["section9_desired", "physical"], "화장실 이용하기(이동변기, 기저귀 교환 등)")} />
+        <div className="nf-group">
+          <div className="nf-sub-label">가. 신체활동지원</div>
+          <div className="nf-row">
+            개인위생(
+            {["세면", "구강청결", "몸단장", "머리감기", "옷갈아입기"].map((x) => (
+              <Cb key={x} on={has(phy, `개인위생 ${x}`)} label={x} onToggle={() => t(["section9_desired", "physical"], `개인위생 ${x}`)} />
+            ))}
+            도움)
+          </div>
+          <div className="nf-row">
+            <Cb on={has(phy, "몸 씻기(목욕)")} label="몸 씻기(목욕)" onToggle={() => t(["section9_desired", "physical"], "몸 씻기(목욕)")} />
+            <Cb on={has(phy, "체위변경하기")} label="체위변경하기" onToggle={() => t(["section9_desired", "physical"], "체위변경하기")} />
+            <Cb on={has(phy, "식사하기(식사도움)")} label="식사하기(식사도움)" onToggle={() => t(["section9_desired", "physical"], "식사하기(식사도움)")} />
+          </div>
+          <div className="nf-row">
+            <Cb on={has(phy, "이동도움(부축, 휠체어 등)")} label="이동도움(부축, 휠체어 등)" onToggle={() => t(["section9_desired", "physical"], "이동도움(부축, 휠체어 등)")} />
+            <Cb on={has(phy, "화장실 이용하기(이동변기, 기저귀 교환 등)")} label="화장실 이용하기(이동변기, 기저귀 교환 등)" onToggle={() => t(["section9_desired", "physical"], "화장실 이용하기(이동변기, 기저귀 교환 등)")} />
+          </div>
         </div>
 
-        <div className="nf-sub-label">나. 일상생활 지원</div>
+        <div className="nf-group">
+          <div className="nf-sub-label">나. 일상생활 지원</div>
         <div className="nf-row">
           <Cb on={has(dly, "식사 준비 및 정리")} label="식사 준비 및 정리" onToggle={() => t(["section9_desired", "daily"], "식사 준비 및 정리")} />
           <Cb on={has(dly, "청소·주변정돈")} label="청소·주변정돈" onToggle={() => t(["section9_desired", "daily"], "청소·주변정돈")} />
@@ -973,8 +976,10 @@ function Page5({ d, u, ut, t }: { d: Dict; u: (p: string[], v: any) => void; ut:
             <Cb key={x} on={has(dly, `외출 동행 ${x}`)} label={x} onToggle={() => t(["section9_desired", "daily"], `외출 동행 ${x}`)} />
           ))})
         </div>
+        </div>
 
-        <div className="nf-sub-label">다. 기능회복훈련</div>
+        <div className="nf-group">
+          <div className="nf-sub-label">다. 기능회복훈련</div>
         <div className="nf-row">
           {["신체기능 훈련", "일상생활 동작 훈련"].map((x) => (
             <Cb key={x} on={has(s9.rehab, x)} label={x} onToggle={() => t(["section9_desired", "rehab"], x)} />
@@ -993,32 +998,42 @@ function Page5({ d, u, ut, t }: { d: Dict; u: (p: string[], v: any) => void; ut:
         <div className="nf-row">
           <Cb on={has(s9.rehab, "기타")} label="기타(" onToggle={() => t(["section9_desired", "rehab"], "기타")} /> )
         </div>
+        </div>
 
-        <div className="nf-sub-label">라. 인지관리 및 정서지원</div>
+        <div className="nf-group">
+          <div className="nf-sub-label">라. 인지관리 및 정서지원</div>
         <div className="nf-row">
           <Cb on={has(s9.cognition, "인지관리지원")} label="인지관리지원" onToggle={() => t(["section9_desired", "cognition"], "인지관리지원")} />
           <Cb on={has(s9.cognition, "정서지원")} label="정서지원" onToggle={() => t(["section9_desired", "cognition"], "정서지원")} />
         </div>
         <div className="nf-row"><Cb on={has(s9.cognition, "기타")} label="기타(" onToggle={() => t(["section9_desired", "cognition"], "기타")} /> )</div>
+        </div>
 
-        <div className="nf-sub-label">마. 건강 및 간호관리</div>
+        <div className="nf-group">
+          <div className="nf-sub-label">마. 건강 및 간호관리</div>
         <div className="nf-row">
           <Cb on={has(s9.health, "건강관리(투약관리 및 기초건강관리 등)")} label="건강관리(투약관리 및 기초건강관리 등)" onToggle={() => t(["section9_desired", "health"], "건강관리(투약관리 및 기초건강관리 등)")} />
           <Cb on={has(s9.health, "간호관리(욕창, 통증, 호흡기, 구강간호 등)")} label="간호관리(욕창, 통증, 호흡기, 구강간호 등)" onToggle={() => t(["section9_desired", "health"], "간호관리(욕창, 통증, 호흡기, 구강간호 등)")} />
         </div>
+        </div>
 
-        <div className="nf-sub-label">바. 방문목욕</div>
+        <div className="nf-group">
+          <div className="nf-sub-label">바. 방문목욕</div>
         <div className="nf-row">
           <Cb on={has(s9.bath, "차량을 이용한 방문목욕")} label="차량을 이용한 방문목욕" onToggle={() => t(["section9_desired", "bath"], "차량을 이용한 방문목욕")} />
           <Cb on={has(s9.bath, "차량을 이용하지 않은 방문목욕")} label="차량을 이용하지 않은 방문목욕" onToggle={() => t(["section9_desired", "bath"], "차량을 이용하지 않은 방문목욕")} />
         </div>
+        </div>
 
-        <div className="nf-sub-label">사. 복지용구</div>
+        <div className="nf-group">
+          <div className="nf-sub-label">사. 복지용구</div>
         <div className="nf-row">
           희망품목( <EditInline value={(s9.aids ?? []).join(", ")} onChange={(v) => u(["section9_desired", "aids"], v.split(",").map((x: string) => x.trim()).filter(Boolean))} width={400} /> )
         </div>
+        </div>
 
-        <div className="nf-sub-label">아. 장기요양급여 외 희망하는 지역사회 자원</div>
+        <div className="nf-group">
+          <div className="nf-sub-label">아. 장기요양급여 외 희망하는 지역사회 자원</div>
         <div className="nf-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" }}>
           {[
             ["없음", "보건의료서비스(보건소, 치매안심센터 등)"],
@@ -1029,6 +1044,7 @@ function Page5({ d, u, ut, t }: { d: Dict; u: (p: string[], v: any) => void; ut:
             <div key={x}><Cb on={has(s9.community, x)} label={x} onToggle={() => t(["section9_desired", "community"], x)} /></div>
           ))}
           <div><Cb on={has(s9.community, "기타")} label="기타(" onToggle={() => t(["section9_desired", "community"], "기타")} /> )</div>
+        </div>
         </div>
 
         <div className="nf-sub-label">자. 의견 및 판단근거</div>

@@ -103,6 +103,7 @@ button, a {
 .nf-free .nf-sub-label { font-weight: 700; margin-top: 3px; margin-bottom: 1px; font-size: 10pt; }
 .nf-free .nf-row { margin: 1px 0; padding-left: 4px; }
 .nf-free textarea.nf-edit-text { padding: 1px 4px; border: 0 !important; }
+.nf-free .nf-group { padding-bottom: 3px; margin-bottom: 3px; border-bottom: 1px solid #000; }
 .nf-cb {
   white-space: nowrap;
   margin-right: 20px;
