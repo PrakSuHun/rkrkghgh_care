@@ -5,13 +5,8 @@ export const maxDuration = 120;
 
 const NEEDS: Record<DocType, { senior?: boolean; worker?: boolean; month?: boolean }> = {
   needs_assessment: { senior: true },
-  care_plan: { senior: true },
-  monthly_status: { senior: true, month: true },
-  service_record: { senior: true, month: true },
   senior_handover: { senior: true },
-  monthly_counseling: { worker: true, month: true },
-  service_contract: { senior: true },
-  monthly_work_report: { worker: true, month: true },
+  monthly_work_report: { senior: true, month: true },
 };
 
 export async function POST(req: Request) {
@@ -33,6 +28,7 @@ export async function POST(req: Request) {
       month: body.month,
       fromWorkerId: body.from_worker_id ? Number(body.from_worker_id) : undefined,
       toWorkerId: body.to_worker_id ? Number(body.to_worker_id) : undefined,
+      userPrompt: body.user_prompt,
     });
     return NextResponse.json({ doc });
   } catch (e: any) {

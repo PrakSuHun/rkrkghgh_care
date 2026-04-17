@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useLayoutEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import Link from "next/link";
@@ -9,15 +9,30 @@ import { ArrowLeft, Printer, Copy, Check, Loader2, Wand2, RefreshCw } from "luci
 type DocSection = { label: string; text: string; type?: "text" | "table"; rows?: string[][]; headers?: string[] };
 type DocOutput = { title: string; subtitle?: string; meta: DocSection[]; sections: DocSection[]; signature?: boolean };
 
-const TYPE_META: Record<string, { label: string; needSenior?: boolean; needWorker?: boolean; needMonth?: boolean; needFromTo?: boolean }> = {
+function AutoTextarea({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }, [value]);
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full text-sm whitespace-pre-wrap bg-transparent resize-none border-0 focus:outline-none focus:bg-yellow-50 print:focus:bg-transparent rounded p-1 overflow-hidden"
+      style={{ minHeight: "60px" }}
+    />
+  );
+}
+
+const TYPE_META: Record<string, { label: string; needSenior?: boolean; needWorker?: boolean; needMonth?: boolean; needFromTo?: boolean; needUserPrompt?: boolean }> = {
   needs_assessment: { label: "욕구사정지", needSenior: true },
-  care_plan: { label: "장기요양급여 제공계획서", needSenior: true },
-  monthly_status: { label: "월간 상태기록지", needSenior: true, needMonth: true },
-  service_record: { label: "급여제공기록지", needSenior: true, needMonth: true },
+  fall_assessment: { label: "낙상평가지", needSenior: true },
   senior_handover: { label: "수급자 인수인계서", needSenior: true, needFromTo: true },
-  monthly_counseling: { label: "상담일지 월간보고", needWorker: true, needMonth: true },
-  service_contract: { label: "장기요양급여 이용계약서", needSenior: true },
-  monthly_work_report: { label: "월간 업무보고서", needWorker: true, needMonth: true },
+  monthly_work_report: { label: "업무체계보고서", needSenior: true, needMonth: true, needUserPrompt: true },
 };
 
 export default function DocTypePage() {
@@ -33,6 +48,7 @@ export default function DocTypePage() {
   const [fromWorkerId, setFromWorkerId] = useState("");
   const [toWorkerId, setToWorkerId] = useState("");
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [userPrompt, setUserPrompt] = useState("");
 
   const [doc, setDoc] = useState<DocOutput | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -53,7 +69,11 @@ export default function DocTypePage() {
 
   const submit = async () => {
     if (type === "needs_assessment" && seniorId) {
-      router.push(`/seniors/${seniorId}/needs-assessment`);
+      router.push(`/seniors/${seniorId}/needs-assessment?from=documents`);
+      return;
+    }
+    if (type === "fall_assessment" && seniorId) {
+      router.push(`/seniors/${seniorId}/fall-assessment/latest?from=documents`);
       return;
     }
     setGenerating(true); setErr(null);
@@ -64,6 +84,7 @@ export default function DocTypePage() {
       if (meta.needMonth) body.month = month;
       if (meta.needFromTo) {
         if (fromWorkerId) body.from_worker_id = fromWorkerId;
+        if (meta.needUserPrompt && userPrompt.trim()) body.user_prompt = userPrompt.trim();
         if (toWorkerId) body.to_worker_id = toWorkerId;
       }
       const res = await fetch("/api/documents/generate", {
@@ -73,6 +94,15 @@ export default function DocTypePage() {
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || "생성 실패");
       setDoc(j.doc);
+      await fetch("/api/saved-documents", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          doc_type: type, title: `${meta.label}${seniorId ? "" : ""}`,
+          senior_id: seniorId ? Number(seniorId) : null,
+          worker_id: workerId ? Number(workerId) : null,
+          month: month || null, content: j.doc,
+        }),
+      });
     } catch (e: any) {
       setErr(e.message);
     } finally {
@@ -177,6 +207,18 @@ export default function DocTypePage() {
               </>
             )}
           </div>
+          {meta.needUserPrompt && (
+            <div>
+              <label className="text-xs text-gray-500">어떤 내용으로 작성할지 간단히 입력 (선택)</label>
+              <textarea
+                value={userPrompt}
+                onChange={(e) => setUserPrompt(e.target.value)}
+                placeholder="예: 이달 식사량이 줄어 체중 관리가 필요한 부분 강조 / 낙상 예방 관점에서 보행 관찰 중심"
+                rows={3}
+                className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
+              />
+            </div>
+          )}
           <div className="flex gap-2">
             <button
               onClick={submit}
@@ -242,12 +284,7 @@ export default function DocTypePage() {
                       </tbody>
                     </table>
                   ) : (
-                    <textarea
-                      value={s.text}
-                      onChange={(e) => updateSection(i, e.target.value)}
-                      rows={Math.max(2, (s.text.match(/\n/g)?.length ?? 0) + 2)}
-                      className="w-full text-sm whitespace-pre-wrap bg-transparent resize-y border-0 focus:outline-none focus:bg-yellow-50 print:focus:bg-transparent rounded p-1"
-                    />
+                    <AutoTextarea value={s.text} onChange={(v) => updateSection(i, v)} />
                   )}
                 </section>
               ))}

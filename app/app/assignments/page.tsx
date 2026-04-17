@@ -389,17 +389,6 @@ function AddSeniorAssignmentModal({
                     </p>
                     {s.long_term_care_id && <p className="text-xs text-gray-500">{s.long_term_care_id}</p>}
                   </div>
-                  {checked && (
-                    <select
-                      value={row?.role ?? "primary"}
-                      onChange={(e) => setRole(s.id, e.target.value)}
-                      className="border rounded px-2 py-1 text-xs"
-                    >
-                      <option value="primary">주담당</option>
-                      <option value="secondary">보조</option>
-                      <option value="substitute">대체</option>
-                    </select>
-                  )}
                 </div>
               );
             })
@@ -552,17 +541,6 @@ function AddAssignmentModal({
                     <p className="font-medium">{c.name}</p>
                     {c.phone && <p className="text-xs text-gray-500">{c.phone}</p>}
                   </div>
-                  {checked && (
-                    <select
-                      value={row?.role ?? "primary"}
-                      onChange={(e) => setRole(c.id, e.target.value)}
-                      className="border rounded px-2 py-1 text-xs"
-                    >
-                      <option value="primary">주담당</option>
-                      <option value="secondary">보조</option>
-                      <option value="substitute">대체</option>
-                    </select>
-                  )}
                 </div>
               );
             })

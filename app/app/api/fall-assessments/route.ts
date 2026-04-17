@@ -46,5 +46,13 @@ export async function POST(req: Request) {
     .select("*")
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await supabase.from("saved_documents").insert({
+    doc_type: "fall_assessment",
+    title: `낙상평가지 · ${senior.name} · ${result.interpretation}`,
+    senior_id: seniorId,
+    content: { fall_id: row.id, scores: result.scores, total: result.total, interpretation: result.interpretation, notes: result.notes },
+  });
+
   return NextResponse.json({ assessment: row });
 }

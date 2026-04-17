@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import Link from "next/link";
 import { ArrowLeft, Printer, RefreshCw, Trash2, Loader2, Wand2 } from "lucide-react";
@@ -21,6 +21,9 @@ const ITEMS: Array<{ key: string; label: string; opts: Array<{ score: number; te
 export default function FallAssessmentPage() {
   const { id, fid } = useParams() as { id: string; fid: string };
   const router = useRouter();
+  const sp = useSearchParams();
+  const backUrl = sp.get("from") === "documents" ? "/documents" : `/seniors/${id}`;
+  const backLabel = sp.get("from") === "documents" ? "서류 목록" : "대상자로";
   const { data, mutate, isLoading } = useSWR<any>(`/api/fall-assessments/${fid}`);
   const [regenerating, setRegenerating] = useState(false);
   const [savingNotes, setSavingNotes] = useState(false);
@@ -89,8 +92,8 @@ export default function FallAssessmentPage() {
   return (
     <>
       <div className="no-print px-4 py-3 max-w-3xl mx-auto flex items-center justify-between gap-2">
-        <Link href={`/seniors/${id}`} className="inline-flex items-center text-sm text-gray-600">
-          <ArrowLeft className="w-4 h-4 mr-1" /> 대상자로
+        <Link href={backUrl} className="inline-flex items-center text-sm text-gray-600">
+          <ArrowLeft className="w-4 h-4 mr-1" /> {backLabel}
         </Link>
         <div className="flex gap-2">
           <button onClick={regen} disabled={regenerating} className="min-h-[40px] px-3 py-2 bg-gray-100 active:bg-gray-300 rounded-lg text-sm inline-flex items-center gap-1 disabled:opacity-50">
@@ -103,13 +106,13 @@ export default function FallAssessmentPage() {
         </div>
       </div>
 
-      <article className="print-sheet nf-sheet max-w-3xl mx-auto bg-white border p-6 sm:p-10 mb-4">
+      <article className="print-sheet fall-sheet max-w-3xl mx-auto bg-white border p-6 sm:p-10 mb-4">
         <div className="mb-3">
-          <p className="font-bold" style={{ fontSize: 12 }}>낙상예방(Huhn의 낙상위험도 평가도구)</p>
+          <p className="fall-title font-bold" style={{ fontSize: 12 }}>낙상예방(Huhn의 낙상위험도 평가도구)</p>
           <p className="text-right font-bold mt-4" style={{ fontSize: 11 }}>수급자 성명 : {name}</p>
         </div>
 
-        <table className="nf-table" style={{ tableLayout: "fixed" }}>
+        <table className="nf-table score-table" style={{ tableLayout: "fixed" }}>
           <colgroup>
             <col style={{ width: "12%" }} />
             <col style={{ width: "19%" }} />
@@ -184,7 +187,7 @@ export default function FallAssessmentPage() {
           </tbody>
         </table>
 
-        <div className="mt-8 text-center">
+        <div className="fall-footer mt-8 text-center">
           <p>{dateStr}</p>
           <p className="mt-3">작성자 : {a.assessor ?? CENTER_INFO.head} &nbsp; (서명)</p>
         </div>

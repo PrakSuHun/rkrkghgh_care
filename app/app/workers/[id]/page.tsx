@@ -6,6 +6,7 @@ import useSWR from "swr";
 import { invalidate } from "@/lib/swr";
 import Link from "next/link";
 import { ArrowLeft, MessageSquare, Loader2, Trash2, Repeat, Plus, X } from "lucide-react";
+import NextLink from "next/link";
 
 type Senior = { id: number; name: string; grade: string | null };
 
@@ -20,6 +21,13 @@ export default function WorkerDetailPage() {
   const { data, mutate, isLoading } = useSWR<any>(`/api/workers/${id}`, {
     refreshInterval: (d: any) => (d?.logs ?? []).some((l: any) => l.status === "processing") ? 3000 : 0,
   });
+  const { data: savedDocsRes } = useSWR<any>("/api/saved-documents?limit=200");
+  const docByLogId = new Map<number, number>();
+  for (const d of savedDocsRes?.documents ?? []) {
+    if (d.doc_type === "counseling" && d.content?.counseling_log_id) {
+      docByLogId.set(d.content.counseling_log_id, d.id);
+    }
+  }
   const loading = isLoading;
   const load = () => {
     mutate();
@@ -177,36 +185,37 @@ export default function WorkerDetailPage() {
           <div className="text-center py-8 text-gray-400">상담일지가 없습니다.</div>
         ) : (
           <div className="space-y-3">
-            {logs.map((l: any) => (
-              <div key={l.id} className="border rounded-lg p-3">
-                <div className="flex justify-between items-center mb-2 gap-2">
-                  <p className="text-xs text-gray-500 min-w-0 truncate">
-                    {new Date(l.created_at).toLocaleString("ko-KR")} · {Math.floor(l.duration / 60)}분 {l.duration % 60}초
-                  </p>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {l.status === "processing" && <span className="flex items-center gap-1 text-xs text-amber-600"><Loader2 className="w-3 h-3 animate-spin" /> 변환중</span>}
-                    {l.status === "done" && <span className="text-xs text-green-600">완료</span>}
-                    {l.status === "failed" && <span className="text-xs text-red-600">실패</span>}
-                    <button
-                      onClick={() => deleteLog(l.id)}
-                      className="min-h-[32px] p-2 text-red-500 active:bg-red-50 rounded-lg"
-                      aria-label="삭제"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+            {logs.map((l: any) => {
+              const docId = docByLogId.get(l.id);
+              const inner = (
+                <div className="border rounded-lg p-3 active:bg-gray-50 cursor-pointer">
+                  <div className="flex justify-between items-center mb-2 gap-2">
+                    <p className="text-xs text-gray-500 min-w-0 truncate">
+                      {new Date(l.created_at).toLocaleString("ko-KR")}
+                      {l.duration > 0 && ` · ${Math.floor(l.duration / 60)}분 ${l.duration % 60}초`}
+                    </p>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {l.status === "processing" && <span className="flex items-center gap-1 text-xs text-amber-600"><Loader2 className="w-3 h-3 animate-spin" /> 변환중</span>}
+                      {l.status === "done" && <span className="text-xs text-green-600">완료</span>}
+                      {l.status === "failed" && <span className="text-xs text-red-600">실패</span>}
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteLog(l.id); }}
+                        className="min-h-[32px] p-2 text-red-500 active:bg-red-50 rounded-lg"
+                        aria-label="삭제"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
+                  {l.summary && (
+                    <p className="text-sm whitespace-pre-wrap bg-emerald-50 p-3 rounded line-clamp-3">{l.summary}</p>
+                  )}
                 </div>
-                {l.summary && (
-                  <p className="text-sm whitespace-pre-wrap bg-emerald-50 p-3 rounded">{l.summary}</p>
-                )}
-                {l.transcript && (
-                  <details className="text-sm mt-2">
-                    <summary className="cursor-pointer text-xs text-gray-500">원본 텍스트 보기</summary>
-                    <p className="mt-2 whitespace-pre-wrap text-gray-700">{l.transcript}</p>
-                  </details>
-                )}
-              </div>
-            ))}
+              );
+              return docId
+                ? <NextLink key={l.id} href={`/documents/view/${docId}?from=worker&wid=${id}`}>{inner}</NextLink>
+                : <div key={l.id}>{inner}</div>;
+            })}
           </div>
         )}
       </section>

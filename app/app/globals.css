@@ -76,6 +76,16 @@ button, a {
 .page-break { page-break-after: always; break-after: page; }
 @media screen { .page-break { display: block; height: 20px; border-top: 2px dashed #bbb; margin: 20px 0; } }
 
+/* 낙상평가지 A4 1장 */
+@media print {
+  @page { size: A4 portrait; margin: 12mm; }
+  .fall-sheet { font-size: 10pt; padding: 0 !important; border: 0 !important; }
+  .fall-sheet .score-table td,
+  .fall-sheet .score-table th { height: 14mm; padding: 2mm 2mm !important; font-size: 9.5pt; }
+  .fall-sheet .fall-title { font-size: 12pt !important; }
+  .fall-sheet .fall-footer { margin-top: 10mm !important; font-size: 10pt; }
+}
+
 /* 공단 욕구조사기록지 전용 */
 .nf-sheet { font-size: 10pt; line-height: 1.35; color: #000; }
 .nf-title { text-align: center; font-size: 18pt; font-weight: 700; margin-bottom: 10px; }
@@ -161,7 +171,6 @@ button, a {
     box-shadow: none !important;
   }
   .nf-page {
-    height: 277mm;
     max-height: 277mm;
     overflow: hidden;
     page-break-after: always;
@@ -178,6 +187,16 @@ button, a {
     break-after: auto !important;
     height: auto;
     max-height: 277mm;
+  }
+
+  .nf-sheet {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* .nf-page가 있는 문서(욕구사정지)만 page 단위로 격리 */
+  .nf-sheet:has(.nf-page) > *:not(.nf-page) {
+    display: none !important;
   }
   .nf-table td, .nf-table th {
     padding: 1px 3px !important;

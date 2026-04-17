@@ -13,5 +13,12 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   }
   const { error } = await supabase.from("counseling_logs").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await supabase
+    .from("saved_documents")
+    .delete()
+    .eq("doc_type", "counseling")
+    .filter("content->>counseling_log_id", "eq", String(id));
+
   return NextResponse.json({ ok: true });
 }

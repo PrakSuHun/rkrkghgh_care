@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-import { Mic, Search, X } from "lucide-react";
+import { Mic, Search, X, PenLine } from "lucide-react";
 import QuickRecordCard from "./components/QuickRecordCard";
 import SeniorSummaryCard from "./components/SeniorSummaryCard";
+import ManualJournalDialog from "./components/ManualJournalDialog";
 
 export default function DashboardPage() {
   const [openSenior, setOpenSenior] = useState(false);
+  const [openManual, setOpenManual] = useState(false);
 
   const { data } = useSWR<{ data: any[] }>("/api/seniors");
   const seniors = data?.data ?? [];
@@ -25,14 +27,24 @@ export default function DashboardPage() {
         <p className="text-xs sm:text-sm text-gray-500 mt-0.5">재가센터 행정 관리 시스템</p>
       </div>
 
-      <button
-        onClick={() => setOpenSenior(true)}
-        className="w-full bg-indigo-600 active:bg-indigo-800 text-white rounded-2xl p-5 shadow-sm text-left"
-      >
-        <Mic className="w-6 h-6 mb-2" />
-        <p className="text-base font-semibold">대상자 일지 녹음</p>
-        <p className="text-xs opacity-80 mt-0.5">어르신 돌봄 상태 녹음</p>
-      </button>
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => setOpenSenior(true)}
+          className="bg-indigo-600 active:bg-indigo-800 text-white rounded-2xl p-5 shadow-sm text-left"
+        >
+          <Mic className="w-6 h-6 mb-2" />
+          <p className="text-base font-semibold">녹음</p>
+          <p className="text-xs opacity-80 mt-0.5">어르신 돌봄 상태 녹음</p>
+        </button>
+        <button
+          onClick={() => setOpenManual(true)}
+          className="bg-emerald-600 active:bg-emerald-800 text-white rounded-2xl p-5 shadow-sm text-left"
+        >
+          <PenLine className="w-6 h-6 mb-2" />
+          <p className="text-base font-semibold">수기 작성</p>
+          <p className="text-xs opacity-80 mt-0.5">직접 입력해 저장</p>
+        </button>
+      </div>
 
       <div className="bg-white border rounded-2xl p-4 space-y-3">
         <div className="relative">
@@ -85,6 +97,7 @@ export default function DashboardPage() {
         accent="indigo"
         onComplete={() => {}}
       />
+      <ManualJournalDialog open={openManual} onClose={() => setOpenManual(false)} />
     </div>
   );
 }

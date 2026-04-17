@@ -5,8 +5,9 @@ import { useState } from "react";
 import useSWR from "swr";
 import { invalidate } from "@/lib/swr";
 import Link from "next/link";
-import { ArrowLeft, Mic, FileText, Loader2, Trash2, Repeat, Plus, X, ClipboardList, Activity, FileCheck, MessageSquare, FileUp } from "lucide-react";
+import { ArrowLeft, Mic, FileText, Loader2, Trash2, Repeat, Plus, X, ClipboardList, Activity, FileCheck, MessageSquare, FileUp, PenLine } from "lucide-react";
 import RecordingDialog from "../../components/RecordingDialog";
+import ManualJournalDialog from "../../components/ManualJournalDialog";
 
 type Worker = { id: number; name: string; phone: string | null };
 
@@ -14,6 +15,8 @@ export default function SeniorDetailPage() {
   const params = useParams();
   const id = params.id as string;
   const [recordOpen, setRecordOpen] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [chooseAddOpen, setChooseAddOpen] = useState(false);
   const [swapFor, setSwapFor] = useState<any | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [allWorkers, setAllWorkers] = useState<Worker[]>([]);
@@ -124,12 +127,6 @@ export default function SeniorDetailPage() {
             >
               {s.status === "active" ? "비활성" : "활성화"}
             </button>
-            <button
-              onClick={() => setRecordOpen(true)}
-              className="min-h-[44px] inline-flex items-center px-4 py-2 bg-indigo-600 active:bg-indigo-800 text-white rounded-lg font-medium"
-            >
-              <Mic className="w-4 h-4 mr-2" /> 녹음
-            </button>
           </div>
         </div>
 
@@ -181,8 +178,14 @@ export default function SeniorDetailPage() {
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-indigo-600" />
             <h2 className="text-base font-semibold">돌봄 일지</h2>
+            <span className="text-xs text-gray-500">총 {journals.length}건</span>
           </div>
-          <span className="text-xs text-gray-500">총 {journals.length}건</span>
+          <button
+            onClick={() => setChooseAddOpen(true)}
+            className="min-h-[36px] inline-flex items-center gap-1 text-sm px-3 py-2 bg-indigo-600 active:bg-indigo-800 text-white rounded-lg"
+          >
+            <Plus className="w-4 h-4" /> 추가
+          </button>
         </div>
         {journals.length === 0 ? (
           <div className="text-center py-8 text-gray-400">아직 작성된 일지가 없습니다.</div>
@@ -265,15 +268,45 @@ export default function SeniorDetailPage() {
         entityId={s.id}
         onComplete={load}
       />
+
+      <ManualJournalDialog
+        open={manualOpen}
+        onClose={() => { setManualOpen(false); load(); }}
+        presetSeniorId={s.id}
+        presetSeniorName={s.name}
+      />
+
+      {chooseAddOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center" onClick={() => setChooseAddOpen(false)}>
+          <div className="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl p-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-semibold mb-3">일지 추가 방식</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => { setChooseAddOpen(false); setRecordOpen(true); }}
+                className="bg-indigo-600 active:bg-indigo-800 text-white rounded-xl p-4 flex flex-col items-center gap-2"
+              >
+                <Mic className="w-6 h-6" />
+                <p className="text-sm font-medium">녹음</p>
+              </button>
+              <button
+                onClick={() => { setChooseAddOpen(false); setManualOpen(true); }}
+                className="bg-emerald-600 active:bg-emerald-800 text-white rounded-xl p-4 flex flex-col items-center gap-2"
+              >
+                <PenLine className="w-6 h-6" />
+                <p className="text-sm font-medium">수기 작성</p>
+              </button>
+            </div>
+            <button onClick={() => setChooseAddOpen(false)} className="mt-3 w-full min-h-[40px] bg-gray-100 active:bg-gray-200 rounded-lg text-sm">취소</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function DocumentsSection({ seniorId, intakePdfPath }: { seniorId: number; intakePdfPath: string | null | undefined }) {
   const { data: fallRes } = useSWR<any>(`/api/fall-assessments?senior_id=${seniorId}`);
-  const { data: meetRes } = useSWR<any>(`/api/meetings`);
   const falls = fallRes?.assessments ?? [];
-  const relatedMeetings = (meetRes?.meetings ?? []).filter((m: any) => m.related_senior_id === seniorId);
   const [intakeUrl, setIntakeUrl] = useState<string | null>(null);
 
   const openIntake = async () => {
@@ -332,22 +365,6 @@ function DocumentsSection({ seniorId, intakePdfPath }: { seniorId: number; intak
         )}
       </div>
 
-      <div>
-        <p className="text-xs font-medium text-gray-700 inline-flex items-center gap-1 mb-1"><MessageSquare className="w-3 h-3" /> 관련 회의일지</p>
-        {relatedMeetings.length === 0 ? (
-          <p className="text-xs text-gray-400 py-2">이 대상자와 연결된 회의록 없음</p>
-        ) : (
-          <div className="space-y-1">
-            {relatedMeetings.slice(0, 5).map((m: any) => (
-              <Link key={m.id} href={`/documents/meeting/${m.id}`}>
-                <div className="border rounded-lg p-2 active:bg-gray-50">
-                  <p className="text-xs truncate">{m.held_at} · {m.title}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
     </section>
   );
 }

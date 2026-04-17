@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR, { mutate as globalMutate } from "swr";
 import Link from "next/link";
@@ -62,6 +62,9 @@ function ScoreCell({ current, value, onChange }: { current: number; value: numbe
 // ---------- page ----------
 export default function NeedsAssessmentFullPage() {
   const { id } = useParams() as { id: string };
+  const sp = useSearchParams();
+  const backUrl = sp.get("from") === "documents" ? "/documents" : `/seniors/${id}`;
+  const backLabel = sp.get("from") === "documents" ? "서류 목록" : "대상자로";
   const { data: seniorRes } = useSWR<any>(`/api/seniors/${id}`);
   const [full, setFull] = useState<Dict | null>(null);
   const [dirty, setDirty] = useState(false);
@@ -160,7 +163,7 @@ export default function NeedsAssessmentFullPage() {
   if (!full) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-10 text-center space-y-4">
-        <Link href={`/seniors/${id}`} className="inline-flex items-center text-sm text-gray-600"><ArrowLeft className="w-4 h-4 mr-1" /> 대상자로</Link>
+        <Link href={backUrl} className="inline-flex items-center text-sm text-gray-600"><ArrowLeft className="w-4 h-4 mr-1" /> {backLabel}</Link>
         <p className="text-gray-500">욕구조사기록지가 아직 생성되지 않았습니다.</p>
         <button onClick={generate} disabled={generating} className="min-h-[44px] px-4 py-2 bg-indigo-600 text-white rounded-lg disabled:opacity-50 inline-flex items-center gap-2">
           {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> AI 작성 중 (1~3분)...</> : "AI로 생성"}
@@ -172,8 +175,8 @@ export default function NeedsAssessmentFullPage() {
   return (
     <>
       <div className="no-print px-4 py-3 max-w-5xl mx-auto flex items-center justify-between gap-2">
-        <Link href={`/seniors/${id}`} className="inline-flex items-center text-sm text-gray-600">
-          <ArrowLeft className="w-4 h-4 mr-1" /> 대상자로
+        <Link href={backUrl} className="inline-flex items-center text-sm text-gray-600">
+          <ArrowLeft className="w-4 h-4 mr-1" /> {backLabel}
         </Link>
         <div className="flex gap-2 items-center">
           {dirty && <span className="text-xs text-amber-600">변경사항 있음</span>}
@@ -326,8 +329,8 @@ function Page1({ d, u, ut, t }: { d: Dict; u: (p: string[], v: any) => void; ut:
         <tbody>
           <tr>
             <th className="w-20">키/체중</th>
-            <td>키 <EditInline value={s2.height_cm} onChange={(v) => u(["section2_health", "height_cm"], Number(v) || 0)} width={50} /> cm</td>
-            <td>체중 <EditInline value={s2.weight_kg} onChange={(v) => u(["section2_health", "weight_kg"], Number(v) || 0)} width={50} /> kg</td>
+            <td style={{ width: "26%" }}>키 <EditInline value={s2.height_cm} onChange={(v) => u(["section2_health", "height_cm"], Number(v) || 0)} width={50} /> cm</td>
+            <td style={{ width: "26%" }}>체중 <EditInline value={s2.weight_kg} onChange={(v) => u(["section2_health", "weight_kg"], Number(v) || 0)} width={50} /> kg</td>
             <td colSpan={3}>BMI <EditInline value={s2.bmi} onChange={(v) => u(["section2_health", "bmi"], v)} width={60} /></td>
           </tr>
           <tr>

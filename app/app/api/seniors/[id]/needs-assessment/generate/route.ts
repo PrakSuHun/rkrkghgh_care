@@ -34,6 +34,13 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       .update({ needs_assessment_full: data, needs_assessment_updated_at: new Date().toISOString() })
       .eq("id", id);
 
+    await supabase.from("saved_documents").insert({
+      doc_type: "needs_assessment",
+      title: `욕구사정지 · ${senior.name} · ${surveyType}`,
+      senior_id: Number(id),
+      content: data,
+    });
+
     return NextResponse.json({ data });
   } catch (e: any) {
     console.error("Needs assessment generation failed:", e.message);
