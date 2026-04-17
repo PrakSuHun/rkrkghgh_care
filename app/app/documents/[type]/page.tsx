@@ -52,6 +52,10 @@ export default function DocTypePage() {
     (!meta.needMonth || /^\d{4}-\d{2}$/.test(month));
 
   const submit = async () => {
+    if (type === "needs_assessment" && seniorId) {
+      router.push(`/seniors/${seniorId}/needs-assessment`);
+      return;
+    }
     setGenerating(true); setErr(null);
     try {
       const body: any = { type };
