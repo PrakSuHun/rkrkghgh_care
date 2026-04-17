@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR, { mutate as globalMutate } from "swr";
 import Link from "next/link";
-import { ArrowLeft, Printer, RefreshCw, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Printer, RefreshCw, Loader2, Save, Wand2 } from "lucide-react";
 
 type Dict = Record<string, any>;
 
@@ -67,6 +67,8 @@ export default function NeedsAssessmentFullPage() {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [refining, setRefining] = useState(false);
 
   useEffect(() => {
     if (seniorRes?.senior?.needs_assessment_full) {
@@ -194,6 +196,47 @@ export default function NeedsAssessmentFullPage() {
         <Page4 d={full} u={update} ut={updateToggle} t={toggleInArray} />
         <Page5 d={full} u={update} ut={updateToggle} t={toggleInArray} />
       </article>
+
+      <div className="no-print max-w-5xl mx-auto px-4 pb-20">
+        <div className="bg-white border rounded-xl p-3 space-y-2">
+          <p className="text-xs text-gray-500 inline-flex items-center gap-1">
+            <Wand2 className="w-3 h-3" /> AI로 수정 — 원하는 변경을 자연어로 입력
+          </p>
+          <textarea
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            placeholder="예: 식사 영양 의견을 좀 더 구체적으로 / 인지기능 항목에 치매 체크해줘 / 종합의견 간결하게"
+            rows={2}
+            className="w-full border rounded-lg p-2 text-sm"
+          />
+          <button
+            onClick={async () => {
+              if (!chatInput.trim()) return;
+              setRefining(true);
+              try {
+                const res = await fetch(`/api/seniors/${id}/needs-assessment/refine`, {
+                  method: "POST", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ instruction: chatInput }),
+                });
+                const j = await res.json();
+                if (!res.ok) throw new Error(j.error);
+                setFull(j.data);
+                setDirty(false);
+                setChatInput("");
+                globalMutate(`/api/seniors/${id}`);
+              } catch (e: any) {
+                alert(e.message);
+              } finally {
+                setRefining(false);
+              }
+            }}
+            disabled={refining || !chatInput.trim()}
+            className="w-full min-h-[44px] bg-indigo-600 active:bg-indigo-800 text-white rounded-lg text-sm font-medium disabled:opacity-60 inline-flex items-center justify-center gap-2"
+          >
+            {refining ? <><Loader2 className="w-4 h-4 animate-spin" /> 적용 중...</> : "적용"}
+          </button>
+        </div>
+      </div>
     </>
   );
 }

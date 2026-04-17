@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import Link from "next/link";
-import { ArrowLeft, Printer, RefreshCw, Trash2, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Printer, RefreshCw, Trash2, Loader2, Wand2 } from "lucide-react";
 import { useState } from "react";
 import { invalidate } from "@/lib/swr";
 import { CENTER_INFO } from "@/lib/centerInfo";
@@ -25,6 +25,8 @@ export default function FallAssessmentPage() {
   const [regenerating, setRegenerating] = useState(false);
   const [savingNotes, setSavingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState<string | null>(null);
+  const [chatInput, setChatInput] = useState("");
+  const [refining, setRefining] = useState(false);
 
   if (isLoading) return <div className="p-6"><Loader2 className="w-5 h-5 animate-spin" /></div>;
   if (!data?.assessment) return <div className="p-6">평가지를 찾을 수 없습니다.</div>;
@@ -187,6 +189,46 @@ export default function FallAssessmentPage() {
           <p className="mt-3">작성자 : {a.assessor ?? CENTER_INFO.head} &nbsp; (서명)</p>
         </div>
       </article>
+
+      <div className="no-print max-w-3xl mx-auto px-4 pb-20">
+        <div className="bg-white border rounded-xl p-3 space-y-2">
+          <p className="text-xs text-gray-500 inline-flex items-center gap-1">
+            <Wand2 className="w-3 h-3" /> AI로 수정 — 점수나 특이사항을 자연어로 변경
+          </p>
+          <textarea
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            placeholder="예: 낙상경험을 3번 이상으로 변경해줘 / 특이사항에 보행기 사용 내용 추가"
+            rows={2}
+            className="w-full border rounded-lg p-2 text-sm"
+          />
+          <button
+            onClick={async () => {
+              if (!chatInput.trim()) return;
+              setRefining(true);
+              try {
+                const res = await fetch(`/api/fall-assessments/${fid}/refine`, {
+                  method: "POST", headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ instruction: chatInput }),
+                });
+                const j = await res.json();
+                if (!res.ok) throw new Error(j.error);
+                mutate();
+                invalidate("/api/fall-assessments");
+                setChatInput("");
+              } catch (e: any) {
+                alert(e.message);
+              } finally {
+                setRefining(false);
+              }
+            }}
+            disabled={refining || !chatInput.trim()}
+            className="w-full min-h-[44px] bg-indigo-600 active:bg-indigo-800 text-white rounded-lg text-sm font-medium disabled:opacity-60 inline-flex items-center justify-center gap-2"
+          >
+            {refining ? <><Loader2 className="w-4 h-4 animate-spin" /> 적용 중...</> : "적용"}
+          </button>
+        </div>
+      </div>
     </>
   );
 }
