@@ -101,6 +101,8 @@ export async function generateNeedsAssessmentFull(ctx: {
   intake?: any;
   journals?: any[];
   caregivers?: string[];
+  previousAssessment?: any;
+  surveyType?: string;
 }): Promise<NeedsAssessmentFull> {
   const model = getClient().getGenerativeModel({
     model: "gemini-2.5-flash",
@@ -108,14 +110,34 @@ export async function generateNeedsAssessmentFull(ctx: {
   });
 
   const journalText = (ctx.journals ?? []).slice(0, 10).map((j: any) => `[${(j.created_at ?? "").slice(0, 10)}] ${j.summary ?? ""}`).join("\n\n") || "(없음)";
+  const surveyType = ctx.surveyType ?? "최초";
+  const hasPrev = !!ctx.previousAssessment;
+
+  const updateRule = hasPrev ? `
+갱신 원칙 (정기 갱신):
+- 아래 [이전 욕구사정 결과]를 기본으로 유지하되, [최근 일지 요약]에서 새로 확인된 변화만 반영.
+- 변화가 없는 영역은 이전 내용을 거의 그대로 유지 (조사·어휘만 살짝 다듬기).
+- 일지에서 확인된 상태 변화가 있으면 해당 체크박스, 점수(ADL 0~3), 질환 배열도 적극 변경.
+- 예: 일지에 "최근 낙상 2회" → falls_3mo를 2로 변경. "식사 거부" → 영양상태 불량으로 변경.
+- 큰 폭으로 전면 다시 쓰지 말고 점진적 보완.
+
+[이전 욕구사정 결과]
+${JSON.stringify(ctx.previousAssessment, null, 2)}
+` : `
+최초 생성: 초기상담기록지와 대상자 기본정보를 근거로 전체 서식을 채움.
+일지가 있으면 일지 내용도 반영하여 체크박스와 점수를 적절히 설정.
+`;
 
   const prompt = `${NO_HALLUCINATION_RULES}
 ${PERSONA_WRITING_RULES}
 
 공단 욕구조사기록지(5페이지) 표준 서식의 모든 필드를 아래 JSON 스키마로 출력한다. 다른 텍스트 금지.
+욕구조사 유형: "${surveyType}"
 기관명: ${CENTER_INFO.name}
 기관기호: ${CENTER_INFO.code}
 작성자: ${CENTER_INFO.head}
+
+${updateRule}
 
 [대상자 기본정보]
 ${JSON.stringify(ctx.senior, null, 2)}
@@ -128,6 +150,11 @@ ${(ctx.caregivers ?? []).join(", ") || "미배정"}
 
 [최근 일지 요약]
 ${journalText}
+
+체크박스/점수 설정 규칙:
+- 일지에서 확인된 상태를 근거로 ADL 점수(0~3), 질환 배열, 배뇨/배변 상태, 보행 상태, 인지/행동 증상 체크박스를 적극 반영.
+- 근거 없는 항목은 이전 값 유지 또는 기본값(0, 양호, 없음).
+- header.survey_type은 반드시 "${surveyType}"으로 설정.
 
 스키마 (빈 값은 그대로, 없는 정보는 null/빈문자/0 사용, 창작 금지):
 ${SCHEMA}

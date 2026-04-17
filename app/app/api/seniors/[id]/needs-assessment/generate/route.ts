@@ -16,12 +16,17 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   ]);
   const cgNames = (assignments ?? []).map((a: any) => a.caregivers?.name).filter(Boolean);
 
+  const isFirst = !senior.needs_assessment_full;
+  const surveyType = isFirst ? "최초" : "정기";
+
   try {
     const data = await generateNeedsAssessmentFull({
       senior,
       intake: intake?.extracted_data,
       journals: journals ?? [],
       caregivers: cgNames,
+      previousAssessment: isFirst ? null : senior.needs_assessment_full,
+      surveyType,
     });
 
     await supabase
