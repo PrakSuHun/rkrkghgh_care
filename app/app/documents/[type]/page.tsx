@@ -93,16 +93,24 @@ export default function DocTypePage() {
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error || "생성 실패");
-      setDoc(j.doc);
-      await fetch("/api/saved-documents", {
+      const seniorName = seniors.find((s: any) => String(s.id) === seniorId)?.name ?? "";
+      const workerName = workers.find((w: any) => String(w.id) === workerId)?.name ?? "";
+      const titleParts = [seniorName || workerName, month].filter(Boolean);
+      const savedRes = await fetch("/api/saved-documents", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          doc_type: type, title: `${meta.label}${seniorId ? "" : ""}`,
+          doc_type: type, title: titleParts.join(" · ") || meta.label,
           senior_id: seniorId ? Number(seniorId) : null,
           worker_id: workerId ? Number(workerId) : null,
           month: month || null, content: j.doc,
         }),
       });
+      const savedJ = await savedRes.json();
+      if (savedJ.id) {
+        router.push(`/documents/view/${savedJ.id}`);
+        return;
+      }
+      setDoc(j.doc);
     } catch (e: any) {
       setErr(e.message);
     } finally {

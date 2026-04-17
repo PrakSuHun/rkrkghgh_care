@@ -49,7 +49,7 @@ export async function POST(req: Request) {
 
   await supabase.from("saved_documents").insert({
     doc_type: "fall_assessment",
-    title: `낙상평가지 · ${senior.name} · ${result.interpretation}`,
+    title: `${senior.name} · ${result.interpretation}`,
     senior_id: seniorId,
     content: { fall_id: row.id, scores: result.scores, total: result.total, interpretation: result.interpretation, notes: result.notes },
   });

@@ -82,7 +82,7 @@ export async function POST(req: Request) {
     const wid = r.workerId ?? (r as any).worker_id;
     return {
       doc_type: "counseling",
-      title: `요양사 상담일지 · ${r.workerName ?? (r as any).worker_name ?? ""}`,
+      title: `${r.workerName ?? (r as any).worker_name ?? ""} · ${date}`,
       worker_id: wid,
       content: {
         counselor: "권오성",

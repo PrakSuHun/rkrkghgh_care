@@ -36,7 +36,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
     await supabase.from("saved_documents").insert({
       doc_type: "needs_assessment",
-      title: `욕구사정지 · ${senior.name} · ${surveyType}`,
+      title: `${senior.name} · ${surveyType}`,
       senior_id: Number(id),
       content: data,
     });
