@@ -165,13 +165,20 @@ const TEXT_PROMPT = `${NO_HALLUCINATION_RULES}
   "hearing": "양호 | 큰소리로 말할 경우 가능 | 보청기 착용 등",
   "speech": "양호 | 묻는 말에만 대답 | 불가능",
   "service_use": "없음 | 타 주간보호센터 | 타 기관 등 원문",
-  "disease_history": "발병시기/병력 관련 언급 전체 (여러 줄 그대로)",
+  "disease_history": "발병시기/병력 요약 (녹음·원문을 그대로 옮기지 말고 2~4문장으로 핵심 정리: 언제 어떤 병을 진단받았는지, 현재 치료 상태)",
   "main_hospital": "주의료기관",
   "diseases": ["언급된 질환 라벨들 배열 — 예: 당뇨, 고혈압, 우울증, 수면장애, 관절염, 요통, 요실금"],
-  "medications": "복용약 원문",
-  "individual_needs": "개별욕구/필요한 서비스 관련 언급",
-  "counselor_opinion": "상담자의견/종합 의견 관련 언급"
+  "medications": "복용약 (약 이름만 쉼표로 정리, 부연 설명 제거)",
+  "individual_needs": "개별욕구 요약 (2~3문장, 필요한 도움 중심으로 간결하게)",
+  "counselor_opinion": "상담자의견 요약 (3~4문장, 종합적 판단)"
 }
+
+※ 중요: narrative 필드(disease_history, individual_needs, counselor_opinion)는
+- 녹음·원문을 **그대로 옮기지 말 것**.
+- 구어체("~셨어요", "~하신 것 같아") · 감탄사 · 반복 · "어~ 그~" 같은 말버릇 제거.
+- 서술체 경어("~이심", "~필요함", "~드심")로 정돈.
+- 핵심 사실만 간결하게 정리.
+- 원문의 사실은 100% 보존하되 문장은 다듬는다.
 `;
 
 export async function extractIntakeFromText(text: string): Promise<IntakeExtracted> {
