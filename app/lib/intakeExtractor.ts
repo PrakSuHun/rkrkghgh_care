@@ -59,7 +59,7 @@ const PROMPT = `${NO_HALLUCINATION_RULES}
 
 {
   "counseling_date": "YYYY-MM-DD 또는 null",
-  "counselor_name": "기록자 이름",
+  "counselor_name": "기록자 이름 — 언급이 없으면 반드시 '박현식'",
   "name": "수급자 성명",
   "gender": "M | F | null",
   "birth_date": "YYYY-MM-DD",
@@ -132,7 +132,7 @@ const TEXT_PROMPT = `${NO_HALLUCINATION_RULES}
 
 {
   "counseling_date": "YYYY-MM-DD 또는 null",
-  "counselor_name": "기록자 이름 (없으면 null)",
+  "counselor_name": "기록자 이름 — 언급이 없으면 반드시 '박현식'",
   "name": "수급자 성명",
   "gender": "M | F | null",
   "birth_date": "YYYY-MM-DD",

@@ -208,9 +208,9 @@ export default function IntakeFormPage() {
               <th className={`${thL} w-24`} colSpan={2}>상담일자</th>
               <td className={`${td} text-center${ec(ed.counseling_date)}`} colSpan={3}><Inline value={ed.counseling_date} onChange={(v) => update("counseling_date", v)} editing={editing} width="10rem" /></td>
               <th className={`${thL} w-20`} colSpan={2}>기록자</th>
-              <td className={`${td}${ec(ed.counselor_name)}`} colSpan={3}>
+              <td className={td} colSpan={3}>
                 <span className="mr-3">직위:센터장</span>
-                <span>이름: <Inline value={ed.counselor_name} onChange={(v) => update("counselor_name", v)} editing={editing} width="8rem" /> (서명)</span>
+                <span>이름: <Inline value={ed.counselor_name ?? "박현식"} onChange={(v) => update("counselor_name", v)} editing={editing} width="8rem" /> (서명)</span>
               </td>
             </tr>
             <tr>
