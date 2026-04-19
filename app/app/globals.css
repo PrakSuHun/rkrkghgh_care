@@ -110,36 +110,57 @@ button, a {
 .page-break { page-break-after: always; break-after: page; }
 @media screen { .page-break { display: block; height: 20px; border-top: 2px dashed #bbb; margin: 20px 0; } }
 
-/* 인수인계서 A4 1장 — 축소 인쇄 */
+/* 인수인계서 A4 1장 — 컴팩트 인쇄 */
 @media print {
   @page { size: A4 portrait; margin: 10mm; }
   .handover-sheet {
     padding: 0 !important;
     margin: 0 !important;
     border: 0 !important;
-    font-size: 9pt !important;
-    line-height: 1.2 !important;
+    font-size: 9.5pt !important;
+    line-height: 1.3 !important;
+    box-shadow: none !important;
   }
-  .handover-sheet h1 { font-size: 16pt !important; margin-bottom: 6px !important; }
-  .handover-sheet h2, .handover-sheet .text-sm.font-semibold { font-size: 10pt !important; margin-top: 4px !important; margin-bottom: 2px !important; }
-  .handover-sheet table { font-size: 9pt !important; }
-  .handover-sheet th, .handover-sheet td { padding: 2px 4px !important; line-height: 1.2 !important; }
+  .handover-sheet h1 { font-size: 16pt !important; margin: 0 0 4px !important; }
+  .handover-sheet .text-sm.font-semibold { font-size: 10pt !important; margin-top: 4px !important; margin-bottom: 2px !important; }
+  .handover-sheet table { font-size: 9.5pt !important; margin-bottom: 4px !important; }
+  .handover-sheet th, .handover-sheet td { padding: 2px 4px !important; line-height: 1.3 !important; }
   .handover-sheet textarea {
-    font-size: 9pt !important;
-    line-height: 1.2 !important;
-    max-height: 22mm !important;
-    overflow: hidden !important;
+    font-size: 9.5pt !important;
+    line-height: 1.3 !important;
     border: 0 !important;
     padding: 0 !important;
     resize: none !important;
+    background: transparent !important;
+    height: auto !important;
+    min-height: 0 !important;
   }
-  .handover-sheet input { font-size: 9pt !important; padding: 0 2px !important; }
+  .handover-sheet input {
+    font-size: 9.5pt !important;
+    padding: 0 2px !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+  .handover-sheet select {
+    font-size: 9.5pt !important;
+    border: 0 !important;
+    background: transparent !important;
+    appearance: none;
+    -webkit-appearance: none;
+  }
   .handover-sheet .text-base, .handover-sheet .text-sm, .handover-sheet .text-xs { font-size: 9pt !important; }
   .handover-sheet .mt-6 { margin-top: 4px !important; }
+  .handover-sheet .mt-8 { margin-top: 6px !important; }
+  .handover-sheet .mt-4 { margin-top: 3px !important; }
+  .handover-sheet .mb-1 { margin-bottom: 1px !important; }
   .handover-sheet .mb-3 { margin-bottom: 2px !important; }
   .handover-sheet .mb-4 { margin-bottom: 2px !important; }
   .handover-sheet .space-y-1 > * + * { margin-top: 1px !important; }
+  .handover-sheet .grid { gap: 0 4px !important; }
   .handover-sheet { page-break-inside: avoid; break-inside: avoid; }
+  /* 편집 하이라이트 제거 */
+  .handover-sheet .bg-yellow-50, .handover-sheet .bg-yellow-100 { background: transparent !important; }
+  .handover-sheet .empty-mark { background: transparent !important; border-color: #000 !important; border-style: solid !important; }
 }
 
 /* 낙상평가지 A4 1장 */

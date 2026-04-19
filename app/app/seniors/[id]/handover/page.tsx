@@ -3,7 +3,7 @@
 import { useParams, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import Link from "next/link";
-import { ArrowLeft, Printer, Loader2, Pencil, Save, X } from "lucide-react";
+import { ArrowLeft, Printer, Loader2, Pencil, Save, X, RefreshCw, Wand2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { CENTER_INFO } from "@/lib/centerInfo";
 import { buildHandoverAutofill, isHandoverEmpty } from "@/lib/handoverAutofill";
@@ -91,6 +91,8 @@ export default function HandoverPage() {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Dict | null>(null);
   const [saving, setSaving] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [refining, setRefining] = useState(false);
 
   const workers: Worker[] = useMemo(
     () => (workersRes?.data ?? workersRes?.caregivers ?? []).map((w: any) => ({ id: w.id, name: w.name, phone: w.phone })),
@@ -222,6 +224,51 @@ export default function HandoverPage() {
   const startEdit = () => { setDraft({ ...(initial ?? {}) }); setEditing(true); };
   const cancel = () => { setDraft(null); setEditing(false); };
 
+  const regenerate = () => {
+    if (!data?.senior) return;
+    if (!confirm("AI 자동 채움을 다시 실행합니다. 현재 편집 내용은 유지되며, 저장 전에 원하는 부분만 반영할 수 있습니다. 계속할까요?")) return;
+    const senior = data.senior;
+    const intake = (intakeRes?.intakes ?? [])[0] ?? null;
+    const fresh = buildHandoverAutofill({
+      senior,
+      intake,
+      full: senior?.needs_assessment_full ?? null,
+    });
+    // 인계/인수자 선택은 유지
+    const keepFromId = (draft ?? initial)?.from_worker_id ?? null;
+    const keepToId = (draft ?? initial)?.to_worker_id ?? null;
+    const keepFromName = (draft ?? initial)?.from_worker ?? "";
+    const keepToName = (draft ?? initial)?.to_worker ?? "";
+    setDraft({
+      ...fresh,
+      from_worker_id: keepFromId,
+      to_worker_id: keepToId,
+      from_worker: keepFromName,
+      to_worker: keepToName,
+    });
+    setEditing(true);
+  };
+
+  const refine = async () => {
+    if (!chatInput.trim()) return;
+    setRefining(true);
+    try {
+      const res = await fetch(`/api/seniors/${seniorId}/handover/refine`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instruction: chatInput, current: draft ?? initial ?? {} }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error ?? "AI 수정 실패");
+      setDraft({ ...(draft ?? initial ?? {}), ...j.handover_data });
+      setEditing(true);
+      setChatInput("");
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setRefining(false);
+    }
+  };
+
   const save = async () => {
     if (!draft) return;
     setSaving(true);
@@ -312,6 +359,9 @@ export default function HandoverPage() {
             <>
               <button onClick={startEdit} className="min-h-[40px] px-3 py-2 bg-gray-100 active:bg-gray-300 rounded-lg text-sm inline-flex items-center gap-1">
                 <Pencil className="w-4 h-4" /> 편집
+              </button>
+              <button onClick={regenerate} className="min-h-[40px] px-3 py-2 bg-gray-100 active:bg-gray-300 rounded-lg text-sm inline-flex items-center gap-1">
+                <RefreshCw className="w-4 h-4" /> 재생성
               </button>
               <button onClick={() => window.print()} className="min-h-[40px] px-3 py-2 bg-indigo-600 active:bg-indigo-800 text-white rounded-lg text-sm inline-flex items-center gap-1">
                 <Printer className="w-4 h-4" /> 인쇄
@@ -531,6 +581,30 @@ export default function HandoverPage() {
         <p className="text-center text-sm font-semibold mt-2">{CENTER_INFO.name}</p>
 
       </article>
+
+      {!editing && (
+        <div className="no-print max-w-5xl mx-auto px-4 pb-20">
+          <div className="bg-white border rounded-xl p-3 space-y-2">
+            <p className="text-xs text-gray-500 inline-flex items-center gap-1">
+              <Wand2 className="w-3 h-3" /> AI로 수정 — 원하는 변경을 자연어로 입력
+            </p>
+            <textarea
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="예: 질병 항목 더 간결하게 / 생활환경에 이동 도움 강조 / 전체 2~3줄로 요약"
+              rows={2}
+              className="w-full border rounded-lg p-2 text-sm"
+            />
+            <button
+              onClick={refine}
+              disabled={refining || !chatInput.trim()}
+              className="w-full min-h-[44px] bg-indigo-600 active:bg-indigo-800 text-white rounded-lg text-sm font-medium disabled:opacity-60 inline-flex items-center justify-center gap-2"
+            >
+              {refining ? <><Loader2 className="w-4 h-4 animate-spin" /> 적용 중...</> : "적용"}
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
