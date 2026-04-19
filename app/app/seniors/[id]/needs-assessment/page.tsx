@@ -93,6 +93,7 @@ export default function NeedsAssessmentFullPage() {
   useEffect(() => {
     if (!full) return;
     const checkContainer = (el: Element) => {
+      if (el.classList.contains("skip-empty-mark")) { el.classList.remove("empty-mark"); return; }
       const inputs = el.querySelectorAll<HTMLInputElement>(".nf-edit-inline");
       const texts = el.querySelectorAll<HTMLTextAreaElement>(".nf-edit-text");
       const cbs = el.querySelectorAll(".nf-cb");
@@ -378,8 +379,23 @@ function Page1({ d, u, ut, t }: { d: Dict; u: (p: string[], v: any) => void; ut:
           </tr>
           <tr>
             <th className="w-24 nf-sub-ko" style={{ background: "#fafafa" }}>가. 보유질환</th>
-            <td colSpan={5}>
-              <Cb on={!!dis.none} label="없음" onToggle={() => ut(["section2_health", "diseases", "none"], !dis.none)} />
+            <td colSpan={5} className="skip-empty-mark">
+              <Cb
+                on={!((dis.neuro ?? []).length || (dis.cardio ?? []).length || (dis.endocrine ?? []).length || (dis.musculo ?? []).length || (dis.uro ?? []).length || (dis.sensory ?? []).length || (dis.infection ?? []).length || dis.other_cancer || dis.other_allergy || dis.other_other)}
+                label="없음"
+                onToggle={() => {
+                  // 질환이 하나도 없을 때만 직접 토글 (의미 없음 — display only)
+                  // 질환이 있으면 모두 지워서 '없음' 상태로 전환
+                  const hasAny = (dis.neuro ?? []).length || (dis.cardio ?? []).length || (dis.endocrine ?? []).length || (dis.musculo ?? []).length || (dis.uro ?? []).length || (dis.sensory ?? []).length || (dis.infection ?? []).length || dis.other_cancer || dis.other_allergy || dis.other_other;
+                  if (hasAny && confirm("체크된 모든 질환을 해제하시겠습니까?")) {
+                    u(["section2_health", "diseases"], {
+                      ...dis,
+                      neuro: [], cardio: [], endocrine: [], musculo: [], uro: [], sensory: [], infection: [],
+                      other_cancer: null, other_allergy: null, other_other: null,
+                    });
+                  }
+                }}
+              />
             </td>
           </tr>
           <DiseaseRow cat="뇌신경계" items={["뇌졸중(뇌출혈, 뇌경색증)", "치매", "파킨슨병", "우울증"]} path={["section2_health", "diseases", "neuro"]} data={dis.neuro ?? []} t={t} />
@@ -415,7 +431,21 @@ function Page1({ d, u, ut, t }: { d: Dict; u: (p: string[], v: any) => void; ut:
           </tr>
           <tr>
             <th rowSpan={5} className="w-24 text-center" style={{ writingMode: undefined }}>나. 복약 및<br />의료이용</th>
-            <td colSpan={5}><Cb on={!!s2.medication_none} label="복용하는 약이 없음" onToggle={() => ut(["section2_health", "medication_none"], !s2.medication_none)} /></td>
+            <td colSpan={5} className="skip-empty-mark">
+              <Cb
+                on={!(s2.medication_regular?.reason || s2.medication_regular?.hospital || s2.medication_regular?.interval || s2.medication_irregular || s2.medication_sleep || s2.medication_other)}
+                label="복용하는 약이 없음"
+                onToggle={() => {
+                  const hasAny = s2.medication_regular?.reason || s2.medication_regular?.hospital || s2.medication_regular?.interval || s2.medication_irregular || s2.medication_sleep || s2.medication_other;
+                  if (hasAny && confirm("체크된 모든 복약 정보를 해제하시겠습니까?")) {
+                    u(["section2_health", "medication_regular"], { reason: "", hospital: "", interval: "" });
+                    u(["section2_health", "medication_irregular"], null);
+                    u(["section2_health", "medication_sleep"], false);
+                    u(["section2_health", "medication_other"], "");
+                  }
+                }}
+              />
+            </td>
           </tr>
           <tr>
             <td colSpan={5}>
