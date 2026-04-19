@@ -390,14 +390,13 @@ export default function HandoverPage() {
         <table className="w-full border-collapse mb-3">
           <tbody>
             <tr>
-              <th className={`${thL} w-1/3`}>질병 및 신체상태</th>
-              <th className={`${thL} w-1/3`}>치매여부</th>
-              <th className={`${thL} w-1/3`}>약 복용</th>
-            </tr>
-            <tr>
+              <th className={`${thL} w-32 align-middle`}>질병 및 신체상태</th>
               <td className={`${td}${ec(ed.disease_note)}`} style={{ verticalAlign: "top" }}>
                 <Block value={ed.disease_note} onChange={(v) => update("disease_note", v)} editing={editing} rows={5} />
               </td>
+            </tr>
+            <tr>
+              <th className={`${thL} w-32 align-middle`}>치매여부</th>
               <td className={`${td}${ecAny(ed.dementia_yes, ed.dementia_symptom, ed.dementia_level)}`} style={{ verticalAlign: "top" }}>
                 <div className="space-y-1">
                   <div className="flex items-center gap-3 flex-wrap">
@@ -415,6 +414,9 @@ export default function HandoverPage() {
                   </div>
                 </div>
               </td>
+            </tr>
+            <tr>
+              <th className={`${thL} w-32 align-middle`}>약 복용</th>
               <td className={`${td}${ecAny(ed.medication_yes, ed.medication_count, ed.medication_list)}`} style={{ verticalAlign: "top" }}>
                 <div className="space-y-1">
                   <div className="flex items-center gap-3 flex-wrap">
