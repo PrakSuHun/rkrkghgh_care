@@ -3,16 +3,25 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Upload, FileText, Loader2, Check } from "lucide-react";
+import { ArrowLeft, Upload, FileText, Loader2, Check, Mic, Edit3 } from "lucide-react";
 import { invalidate } from "@/lib/swr";
+import RecordingDialog from "@/app/components/RecordingDialog";
 
 type Extracted = Record<string, any>;
+type Mode = "pdf" | "audio" | "manual";
 
 export default function NewSeniorPage() {
   const router = useRouter();
+  const [mode, setMode] = useState<Mode>("pdf");
+
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [extracting, setExtracting] = useState(false);
+
+  const [recordOpen, setRecordOpen] = useState(false);
+
+  const [manualText, setManualText] = useState("");
+
   const [intakeId, setIntakeId] = useState<number | null>(null);
   const [extracted, setExtracted] = useState<Extracted | null>(null);
   const [saving, setSaving] = useState(false);
@@ -56,6 +65,32 @@ export default function NewSeniorPage() {
     }
   };
 
+  const submitManual = async () => {
+    if (!manualText.trim()) { setErr("내용을 입력해주세요"); return; }
+    setErr(null); setExtracting(true);
+    try {
+      const res = await fetch("/api/intake-forms/from-text", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: manualText }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.error ?? "AI 추출 실패");
+      setIntakeId(j.intake.id);
+      setExtracted(j.intake.extracted_data ?? {});
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setExtracting(false);
+    }
+  };
+
+  const onRecordingComplete = (result: any) => {
+    if (result?.intake) {
+      setIntakeId(result.intake.id);
+      setExtracted(result.intake.extracted_data ?? {});
+    }
+  };
+
   const updateField = (key: string, value: any) => {
     setExtracted({ ...(extracted ?? {}), [key]: value });
   };
@@ -81,6 +116,15 @@ export default function NewSeniorPage() {
     }
   };
 
+  const TabBtn = ({ m, icon, label }: { m: Mode; icon: React.ReactNode; label: string }) => (
+    <button
+      onClick={() => { setMode(m); setErr(null); }}
+      className={`flex-1 min-h-[44px] px-3 py-2 rounded-lg text-sm font-medium inline-flex items-center justify-center gap-1 ${mode === m ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700 active:bg-gray-200"}`}
+    >
+      {icon} {label}
+    </button>
+  );
+
   return (
     <div className="px-4 py-4 sm:p-6 max-w-3xl mx-auto space-y-4">
       <Link href="/seniors" className="inline-flex items-center text-sm text-gray-600">
@@ -89,29 +133,83 @@ export default function NewSeniorPage() {
       <h1 className="text-xl font-bold">어르신 등록</h1>
 
       {!extracted && (
-        <section className="bg-white border rounded-xl p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-indigo-600" />
-            <h2 className="font-semibold">초기상담기록지 업로드 (AI 자동 입력)</h2>
+        <>
+          <div className="flex gap-2">
+            <TabBtn m="audio" icon={<Mic className="w-4 h-4" />} label="녹음" />
+            <TabBtn m="manual" icon={<Edit3 className="w-4 h-4" />} label="수기" />
+            <TabBtn m="pdf" icon={<FileText className="w-4 h-4" />} label="PDF 업로드" />
           </div>
-          <p className="text-xs text-gray-500">PDF를 올리면 AI가 내용을 추출해 자동으로 등록 폼을 채웁니다.</p>
-          <input
-            type="file"
-            accept="application/pdf"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="block w-full text-sm"
-          />
-          <button
-            onClick={uploadAndExtract}
-            disabled={!file || uploading || extracting}
-            className="w-full min-h-[44px] bg-indigo-600 active:bg-indigo-800 text-white rounded-lg font-medium disabled:opacity-50 inline-flex items-center justify-center gap-2"
-          >
-            {uploading ? <><Loader2 className="w-4 h-4 animate-spin" /> 업로드 중...</> :
-             extracting ? <><Loader2 className="w-4 h-4 animate-spin" /> AI 분석 중 (약 1~2분)...</> :
-             <><Upload className="w-4 h-4" /> PDF 올리고 분석하기</>}
-          </button>
-          {err && <p className="text-sm text-red-600">{err}</p>}
-        </section>
+
+          {mode === "audio" && (
+            <section className="bg-white border rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Mic className="w-5 h-5 text-red-500" />
+                <h2 className="font-semibold">녹음으로 초기상담기록지 생성</h2>
+              </div>
+              <p className="text-xs text-gray-500">상담 내용을 녹음하면 AI가 초기상담기록지 양식에 맞춰 자동으로 추출합니다. 추출된 내용은 다음 단계에서 수정할 수 있습니다.</p>
+              <button
+                onClick={() => setRecordOpen(true)}
+                disabled={extracting}
+                className="w-full min-h-[44px] bg-red-500 active:bg-red-700 text-white rounded-lg font-medium disabled:opacity-50 inline-flex items-center justify-center gap-2"
+              >
+                <Mic className="w-4 h-4" /> 녹음 시작
+              </button>
+              {extracting && <p className="text-sm text-gray-500 inline-flex items-center gap-1"><Loader2 className="w-4 h-4 animate-spin" /> AI 분석 중...</p>}
+              {err && <p className="text-sm text-red-600">{err}</p>}
+            </section>
+          )}
+
+          {mode === "manual" && (
+            <section className="bg-white border rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-indigo-600" />
+                <h2 className="font-semibold">수기로 초기상담기록지 생성</h2>
+              </div>
+              <p className="text-xs text-gray-500">상담 내용을 자유롭게 입력하면 AI가 초기상담기록지 양식에 맞춰 자동으로 정리합니다. 추출된 내용은 다음 단계에서 수정할 수 있습니다.</p>
+              <textarea
+                value={manualText}
+                onChange={(e) => setManualText(e.target.value)}
+                placeholder={"예: 2025년 7월 8일 상담. 전대순 어르신, 여성, 1935년 10월 15일생. 4등급. 고혈압, 당뇨 있으시고 담석증으로 수술 받음. 보호자는 큰아들 이현수 (010-8475-3336). 주 1~2회 왕래. 식사 도움 필요..."}
+                rows={10}
+                className="w-full border rounded-lg p-3 text-sm"
+              />
+              <button
+                onClick={submitManual}
+                disabled={!manualText.trim() || extracting}
+                className="w-full min-h-[44px] bg-indigo-600 active:bg-indigo-800 text-white rounded-lg font-medium disabled:opacity-50 inline-flex items-center justify-center gap-2"
+              >
+                {extracting ? <><Loader2 className="w-4 h-4 animate-spin" /> AI 분석 중...</> : <><Upload className="w-4 h-4" /> 분석하기</>}
+              </button>
+              {err && <p className="text-sm text-red-600">{err}</p>}
+            </section>
+          )}
+
+          {mode === "pdf" && (
+            <section className="bg-white border rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-indigo-600" />
+                <h2 className="font-semibold">초기상담기록지 PDF 업로드</h2>
+              </div>
+              <p className="text-xs text-gray-500">이미 작성된 초기상담기록지 PDF가 있다면 올려주세요. AI가 내용을 추출합니다.</p>
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                className="block w-full text-sm"
+              />
+              <button
+                onClick={uploadAndExtract}
+                disabled={!file || uploading || extracting}
+                className="w-full min-h-[44px] bg-indigo-600 active:bg-indigo-800 text-white rounded-lg font-medium disabled:opacity-50 inline-flex items-center justify-center gap-2"
+              >
+                {uploading ? <><Loader2 className="w-4 h-4 animate-spin" /> 업로드 중...</> :
+                 extracting ? <><Loader2 className="w-4 h-4 animate-spin" /> AI 분석 중 (약 1~2분)...</> :
+                 <><Upload className="w-4 h-4" /> PDF 올리고 분석하기</>}
+              </button>
+              {err && <p className="text-sm text-red-600">{err}</p>}
+            </section>
+          )}
+        </>
       )}
 
       {extracted && (
@@ -159,6 +257,16 @@ export default function NewSeniorPage() {
           </button>
         </section>
       )}
+
+      <RecordingDialog
+        open={recordOpen}
+        onClose={() => setRecordOpen(false)}
+        title="초기상담 녹음"
+        uploadUrl="/api/intake-forms/from-audio"
+        pathPrefix="intake"
+        submitLabel="분석하기"
+        onComplete={onRecordingComplete}
+      />
     </div>
   );
 }

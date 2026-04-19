@@ -94,6 +94,17 @@ const PROMPT = `${NO_HALLUCINATION_RULES}
 }
 `;
 
+function parseJsonResponse(raw: string): IntakeExtracted {
+  const cleaned = raw.replace(/^```json\s*/, "").replace(/```\s*$/, "");
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (m) return JSON.parse(m[0]);
+    throw new Error("AI JSON 파싱 실패");
+  }
+}
+
 export async function extractIntakeFromPDF(pdfBuffer: Buffer): Promise<IntakeExtracted> {
   const model = getClient().getGenerativeModel({
     model: "gemini-2.5-flash",
@@ -103,13 +114,85 @@ export async function extractIntakeFromPDF(pdfBuffer: Buffer): Promise<IntakeExt
     { text: PROMPT },
     { inlineData: { data: pdfBuffer.toString("base64"), mimeType: "application/pdf" } },
   ]);
-  const raw = res.response.text().trim();
-  const cleaned = raw.replace(/^```json\s*/, "").replace(/```\s*$/, "");
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    const m = raw.match(/\{[\s\S]*\}/);
-    if (m) return JSON.parse(m[0]);
-    throw new Error("AI JSON 파싱 실패");
-  }
+  return parseJsonResponse(res.response.text().trim());
+}
+
+const TEXT_PROMPT = `${NO_HALLUCINATION_RULES}
+
+아래는 재가장기요양센터 초기상담 내용이다 (녹취 또는 상담자가 직접 기록한 텍스트).
+이 내용에서 초기상담기록지 양식에 맞춰 JSON으로 정확한 필드만 추출하라. 다른 텍스트 절대 금지.
+내용에 언급이 없는 값은 null. 추정/창작 금지.
+
+{
+  "counseling_date": "YYYY-MM-DD 또는 null",
+  "counselor_name": "기록자 이름 (없으면 null)",
+  "name": "수급자 성명",
+  "gender": "M | F | null",
+  "birth_date": "YYYY-MM-DD",
+  "grade": "예: 3등급",
+  "education": "학력",
+  "blood_type": "혈액형",
+  "hometown": "고향",
+  "economic_status": "일반 | 경감 | 기초 | null",
+  "height_cm": 숫자,
+  "weight_kg": 숫자,
+  "spouse": true | false | null,
+  "guardian_name": "보호자 성명",
+  "guardian_relation": "보호자 관계 (예: 큰아들)",
+  "guardian_phone": "연락처 (가장 대표 번호 하나)",
+  "num_children": "자녀수 텍스트 그대로 (예: 3남 1녀)",
+  "cohabit": "동거여부 (유/무/왕래 주5회 등 원문)",
+  "walking": "자립 | 도움 | 완전도움",
+  "emotion": "안정됨 | 조금불안 | 불안정",
+  "personality": "적극 | 보통 | 조용",
+  "habit": "음주/흡연/수면/기타 중 체크된 것 연결",
+  "eating": "자립 | 도움 | 완전도움",
+  "toilet": "자립 | 도움 | 완전도움",
+  "dentition": "의치/잔존치아/틀니/기타 중 체크된 것 원문",
+  "bowel": "정상 | 설사 | 변비 | 기저귀 | 소변주머니 중 체크",
+  "meal_form": "일반식 | 다짐찬 | 유동식(죽) | 경관식",
+  "vision": "양호 | 불가능 | 안경착용 등",
+  "hearing": "양호 | 큰소리로 말할 경우 가능 | 보청기 착용 등",
+  "speech": "양호 | 묻는 말에만 대답 | 불가능",
+  "service_use": "없음 | 타 주간보호센터 | 타 기관 등 원문",
+  "disease_history": "발병시기/병력 관련 언급 전체 (여러 줄 그대로)",
+  "main_hospital": "주의료기관",
+  "diseases": ["언급된 질환 라벨들 배열 — 예: 당뇨, 고혈압, 우울증, 수면장애, 관절염, 요통, 요실금"],
+  "medications": "복용약 원문",
+  "individual_needs": "개별욕구/필요한 서비스 관련 언급",
+  "counselor_opinion": "상담자의견/종합 의견 관련 언급"
+}
+`;
+
+export async function extractIntakeFromText(text: string): Promise<IntakeExtracted> {
+  const model = getClient().getGenerativeModel({
+    model: "gemini-2.5-flash",
+    generationConfig: { ...LOW_TEMP_GENERATION_CONFIG, responseMimeType: "application/json" },
+  });
+  const res = await model.generateContent([
+    { text: TEXT_PROMPT },
+    { text: `[상담 내용]\n${text}` },
+  ]);
+  return parseJsonResponse(res.response.text().trim());
+}
+
+export async function extractIntakeFromAudio(audio: Buffer, mimeType: string): Promise<{ transcript: string; extracted: IntakeExtracted }> {
+  const model = getClient().getGenerativeModel({
+    model: "gemini-2.5-flash",
+    generationConfig: LOW_TEMP_GENERATION_CONFIG,
+  });
+  const transcribeRes = await model.generateContent([
+    {
+      text: `다음 음성은 재가장기요양센터의 초기상담 녹음이다.
+한국어로 **들리는 그대로** 받아적으세요.
+- 들리지 않거나 알아들을 수 없는 부분은 [불분명] 으로 표기.
+- 추측해서 채우지 마세요.
+- 받아쓴 내용만 출력. 설명·머리말 금지.`,
+    },
+    { inlineData: { data: audio.toString("base64"), mimeType } },
+  ]);
+  const transcript = transcribeRes.response.text().trim();
+  if (!transcript) throw new Error("음성 인식 결과가 비어있습니다");
+  const extracted = await extractIntakeFromText(transcript);
+  return { transcript, extracted };
 }

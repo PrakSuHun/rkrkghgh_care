@@ -8,9 +8,11 @@ type Props = {
   onClose: () => void;
   title: string;
   uploadUrl: string;
-  uploadField: string;
-  entityId: number | string;
-  onComplete: () => void;
+  uploadField?: string;
+  entityId?: number | string;
+  onComplete: (result?: any) => void;
+  pathPrefix?: string;
+  submitLabel?: string;
 };
 
 const MIME_EXT: Record<string, string> = {
@@ -26,7 +28,7 @@ function extOfMime(mime: string): string {
   return MIME_EXT[base] ?? "webm";
 }
 
-export default function RecordingDialog({ open, onClose, title, uploadUrl, uploadField, entityId, onComplete }: Props) {
+export default function RecordingDialog({ open, onClose, title, uploadUrl, uploadField, entityId, onComplete, pathPrefix, submitLabel }: Props) {
   const [recording, setRecording] = useState(false);
   const [paused, setPaused] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -303,7 +305,9 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
     setErrorMsg(null);
 
     const ext = extOfMime(blob.type);
-    const path = `${uploadField === "senior_id" ? "journal" : "counseling"}_${entityId}_${Date.now()}.${ext}`;
+    const prefix = pathPrefix ?? (uploadField === "senior_id" ? "journal" : "counseling");
+    const idPart = entityId !== undefined && entityId !== null && entityId !== "" ? `_${entityId}` : "";
+    const path = `${prefix}${idPart}_${Date.now()}.${ext}`;
 
     try {
       // 1) 서명 업로드 URL 발급
@@ -334,21 +338,25 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
       });
 
       // 3) 메타데이터 등록 → AI 변환 트리거
+      const body: Record<string, any> = {
+        duration: elapsed,
+        audio_path: path,
+        mime_type: blob.type,
+      };
+      if (uploadField && entityId !== undefined && entityId !== null && entityId !== "") {
+        body[uploadField] = entityId;
+      }
       const metaRes = await fetch(uploadUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          [uploadField]: entityId,
-          duration: elapsed,
-          audio_path: path,
-          mime_type: blob.type,
-        }),
+        body: JSON.stringify(body),
       });
       if (!metaRes.ok) {
         const text = await metaRes.text();
         throw new Error(`등록 실패 (${metaRes.status}): ${text.slice(0, 200)}`);
       }
-      onComplete();
+      const metaJson = await metaRes.json().catch(() => ({}));
+      onComplete(metaJson);
       onClose();
     } catch (err) {
       setErrorMsg((err as Error).message);
@@ -470,7 +478,7 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
                       업로드 중
                     </>
                   ) : (
-                    "일지 생성"
+                    submitLabel ?? "일지 생성"
                   )}
                 </button>
               </div>

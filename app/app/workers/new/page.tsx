@@ -9,7 +9,6 @@ import { invalidate } from "@/lib/swr";
 export default function NewWorkerPage() {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -20,7 +19,7 @@ export default function NewWorkerPage() {
     try {
       const res = await fetch("/api/workers", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), phone: phone.trim() || null }),
+        body: JSON.stringify({ name: name.trim() }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error ?? "등록 실패");
@@ -44,7 +43,7 @@ export default function NewWorkerPage() {
           <UserPlus className="w-5 h-5 text-green-600" />
           <h1 className="text-lg font-bold">요양보호사 등록</h1>
         </div>
-        <p className="text-xs text-gray-500">이름과 휴대폰번호만 있으면 바로 등록됩니다. 나머지 정보는 나중에 보완할 수 있어요.</p>
+        <p className="text-xs text-gray-500">이름만 있으면 바로 등록됩니다. 휴대폰번호 등 나머지 정보는 나중에 보완할 수 있어요.</p>
 
         <div className="space-y-3">
           <label className="block">
@@ -53,20 +52,10 @@ export default function NewWorkerPage() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
               placeholder="예: 홍길동"
               className="mt-1 w-full border rounded-lg px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-green-500"
               autoFocus
-            />
-          </label>
-          <label className="block">
-            <span className="text-sm font-medium text-gray-700">휴대폰번호</span>
-            <input
-              type="tel"
-              inputMode="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="예: 010-1234-5678"
-              className="mt-1 w-full border rounded-lg px-3 py-3 text-base focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </label>
         </div>
