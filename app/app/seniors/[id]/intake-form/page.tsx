@@ -251,16 +251,16 @@ export default function IntakeFormPage() {
             <tr>
               <th className={thL} rowSpan={2}>보호자</th>
               <th className={thL}>성 명</th>
-              <td className={`${td}${ec(ed.guardian_name)}`}><Inline value={ed.guardian_name} onChange={(v) => update("guardian_name", v)} editing={editing} /></td>
+              <td className={`${td}${ec(ed.guardian_name)}`} colSpan={2}><Inline value={ed.guardian_name} onChange={(v) => update("guardian_name", v)} editing={editing} /></td>
               <th className={thL}>자녀수</th>
               <th className={thL}>연락처</th>
-              <td className={`${td}${ec(ed.guardian_phone)}`} colSpan={4}><Block value={ed.guardian_phone} onChange={(v) => update("guardian_phone", v)} editing={editing} rows={2} /></td>
+              <td className={`${td}${ec(ed.guardian_phone)}`} colSpan={3}><Block value={ed.guardian_phone} onChange={(v) => update("guardian_phone", v)} editing={editing} rows={2} /></td>
             </tr>
             <tr>
               <th className={thL}>주수발자</th>
               <td className={`${td}${ec(ed.primary_caregiver)}`}><Inline value={ed.primary_caregiver} onChange={(v) => update("primary_caregiver", v)} editing={editing} placeholder="이름" /></td>
-              <td className={`${td}${ec(ed.num_children)}`}><Inline value={ed.num_children} onChange={(v) => update("num_children", v)} editing={editing} placeholder="예: 2남 2녀" /></td>
               <td className={`${td}${ec(ed.guardian_relation)}`}><Inline value={ed.guardian_relation} onChange={(v) => update("guardian_relation", v)} editing={editing} placeholder="관계" /></td>
+              <td className={`${td}${ec(ed.num_children)}`}><Inline value={ed.num_children} onChange={(v) => update("num_children", v)} editing={editing} placeholder="예: 2남 2녀" /></td>
               <th className={thL}>동거여부</th>
               <td className={`${td}${ec(ed.cohabit_type)}`} colSpan={3}>
                 <Cb on={ed.cohabit_type === "유"} label="유" onToggle={() => update("cohabit_type", ed.cohabit_type === "유" ? null : "유")} editing={editing} />
