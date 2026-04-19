@@ -165,6 +165,20 @@ export default function NewSeniorPage() {
                   className="w-full min-h-[40px] border rounded-lg px-3 py-2 text-sm"
                 />
               </div>
+              <details className="bg-gray-50 border rounded-lg p-3">
+                <summary className="text-xs font-semibold text-gray-700 cursor-pointer">녹음 가이드 — 어떤 내용을 말할까요?</summary>
+                <div className="mt-2 text-xs text-gray-600 space-y-1.5 leading-relaxed">
+                  <p>다음 순서대로 자연스럽게 말해주세요. 기억나는 것만 말해도 됩니다.</p>
+                  <p><b>1) 기본 정보</b><br/>이름, 성별, 생년월일, 등급, 고향, 학력, 종교, 경제상태, 키/체중, 배우자 유무</p>
+                  <p><b>2) 보호자</b><br/>보호자 이름, 관계, 연락처, 자녀수, 동거/왕래 여부</p>
+                  <p><b>3) 일상생활</b><br/>보행·식사·용변 (자립/도움/완전도움), 정서 상태, 개인성향, 습관(음주·흡연 등)</p>
+                  <p><b>4) 영양</b><br/>치아 상태, 배변, 식사 형태(일반식·다짐찬·유동식·경관식)</p>
+                  <p><b>5) 회화</b><br/>시력, 청력(이명·보청기), 말하기</p>
+                  <p><b>6) 병력·질환</b><br/>발병시기, 주 의료기관, 주요 질환(고혈압·당뇨·치매·관절염 등), 복용약</p>
+                  <p><b>7) 종합</b><br/>개별욕구(어떤 도움이 필요한지), 상담자 의견</p>
+                  <p className="text-gray-500 mt-2 pt-2 border-t">예시: "전대순 어르신, 여성, 1935년 10월 15일생. 4등급. 경제상태는 일반. 배우자 없음. 보호자는 큰아들 이현수 010-8475-3336. 자녀 2남1녀, 주 1~2회 왕래. 보행 도움 필요하고 식사는 자립. 정서는 조금 불안. 고혈압·당뇨 있으시고 2025년 7월 담석 수술 받음. 주 의료기관은 성모병원. 복용약은 당뇨·고혈압·퇴행성이명..."</p>
+                </div>
+              </details>
               <button
                 onClick={() => { if (!seniorName.trim()) { setErr("대상자 이름을 입력해주세요"); return; } setErr(null); setRecordOpen(true); }}
                 disabled={extracting}
