@@ -40,17 +40,21 @@ function Inline({ value, onChange, editing, width, placeholder }: { value: any; 
 
 function Block({ value, onChange, editing, rows = 2 }: { value: any; onChange: (v: string) => void; editing: boolean; rows?: number }) {
   const text = value == null ? "" : String(value);
+  const len = text.length;
+  // 인쇄 시 긴 글은 폰트를 점진적으로 축소해 1페이지에 담기게
+  const printSize = len > 300 ? 7 : len > 200 ? 8 : len > 120 ? 8.5 : 9.5;
   if (editing) {
     return (
       <textarea
-        className="w-full border rounded px-1 py-1 text-sm bg-yellow-50 focus:outline-none focus:bg-yellow-100"
+        className="intake-block w-full border rounded px-1 py-1 text-sm bg-yellow-50 focus:outline-none focus:bg-yellow-100"
         rows={rows}
         value={text}
         onChange={(e) => onChange(e.target.value)}
+        data-print-size={printSize}
       />
     );
   }
-  return <span className="text-sm whitespace-pre-wrap">{text}</span>;
+  return <span className="intake-block text-sm whitespace-pre-wrap" data-print-size={printSize}>{text}</span>;
 }
 
 const DISEASE_CATEGORIES: Array<{ left: { name: string; items: string[] }; right: { name: string; items: string[] } }> = [
@@ -190,7 +194,7 @@ export default function IntakeFormPage() {
         </div>
       </div>
 
-      <article className="print-sheet max-w-5xl mx-auto bg-white border p-6 sm:p-10 mb-4">
+      <article className="print-sheet intake-sheet max-w-5xl mx-auto bg-white border p-6 sm:p-10 mb-4">
         <h1 className="text-3xl font-bold text-center mb-5">초기상담기록지</h1>
 
         <table className="w-full border-collapse mb-3">
