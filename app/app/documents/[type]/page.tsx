@@ -329,7 +329,6 @@ export default function DocTypePage() {
               </div>
             )}
 
-            <footer className="mt-6 text-xs text-gray-500 text-right">출력일: {new Date().toISOString().slice(0, 10)}</footer>
           </article>
 
           <div className="no-print max-w-4xl mx-auto px-4 pb-20">

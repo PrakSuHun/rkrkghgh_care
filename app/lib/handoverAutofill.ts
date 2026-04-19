@@ -38,6 +38,17 @@ const norm = (v: any): string => {
   return String(v).trim();
 };
 
+// 긴 문장을 요약 형태로 압축: 첫 문장 + 쉼표로 구분된 핵심 토큰만, 총 길이 cap
+const summarize = (text: string, cap: number): string => {
+  const s = norm(text).replace(/\s+/g, " ");
+  if (!s) return "";
+  // 첫 문장 추출 (마침표/물음표/느낌표/줄바꿈 기준)
+  const m = s.match(/^[^.。!?\n]{1,200}[.。!?]?/);
+  const first = (m?.[0] ?? s).trim();
+  if (first.length <= cap) return first;
+  return first.slice(0, cap - 1).trim() + "…";
+};
+
 const includesAny = (hay: string, needles: string[]): boolean => {
   const h = (hay ?? "").toLowerCase();
   return needles.some((n) => h.includes(n.toLowerCase()));
@@ -160,38 +171,27 @@ function inferServiceEmotion(intake: any, full: any): string[] {
 }
 
 function buildDiseaseNote(senior: any, intake: any, full: any): string {
-  const lines: string[] = [];
-  // 1) intake.disease_history 우선
-  if (intake?.disease_history) lines.push(norm(intake.disease_history));
-  // 2) intake.diseases — 치매 제외
-  if (Array.isArray(intake?.diseases)) {
-    const ds = intake.diseases.filter((d: any) => d && !String(d).includes("치매"));
-    if (ds.length) lines.push(`기저질환: ${ds.join(", ")}`);
-  }
-  // 3) seniors.major_diseases (compat: senior.diseases)
-  const sDiseases = senior?.diseases ?? senior?.major_diseases;
-  if (Array.isArray(sDiseases) && sDiseases.length) {
-    const ds = sDiseases.filter((d: any) => d && !String(d).includes("치매"));
-    if (ds.length && !lines.some((l) => ds.every((d: string) => l.includes(d)))) {
-      lines.push(`등록 질환: ${ds.join(", ")}`);
+  // 핵심 질환 토큰만 모아서 한 줄로 (치매 제외)
+  const tokens = new Set<string>();
+  const addArr = (arr: any) => {
+    if (!Array.isArray(arr)) return;
+    for (const d of arr) {
+      const s = String(d ?? "").trim();
+      if (s && !s.includes("치매")) tokens.add(s);
     }
-  }
-  // 4) 욕구사정 질환 분류 (있으면 보충)
+  };
+  addArr(intake?.diseases);
+  addArr(senior?.diseases);
+  addArr(senior?.major_diseases);
   if (full?.section2_health?.diseases) {
     const d = full.section2_health.diseases;
-    const all: string[] = [];
     for (const k of ["neuro", "cardio", "endocrine", "musculo", "uro", "sensory", "infection"]) {
-      if (Array.isArray(d[k])) all.push(...d[k].filter(Boolean));
-    }
-    const filtered = all.filter((x) => !String(x).includes("치매"));
-    if (filtered.length) {
-      const joined = filtered.join(", ");
-      if (!lines.some((l) => l.includes(joined))) {
-        lines.push(`공단 욕구사정 등록 질환: ${joined}`);
-      }
+      addArr(d[k]);
     }
   }
-  return lines.filter(Boolean).join("\n");
+  const diseaseList = Array.from(tokens).join(", ");
+  const history = summarize(intake?.disease_history, 80);
+  return [history, diseaseList && `기저질환: ${diseaseList}`].filter(Boolean).join(" / ");
 }
 
 function detectDementia(senior: any, intake: any, full: any): boolean | null {
@@ -253,39 +253,29 @@ function buildLifeEnvironment(senior: any, intake: any, full: any): string {
   if (intake?.cohabit_type || intake?.cohabit) {
     const t = norm(intake.cohabit_type);
     const c = norm(intake.cohabit);
-    parts.push(`동거: ${[t, c].filter(Boolean).join(" / ")}`);
-  }
-  if (senior?.environment) {
-    parts.push(`환경: ${norm(senior.environment)}`);
+    const v = [t, c].filter(Boolean).join(" ");
+    if (v) parts.push(`동거 ${v}`);
   }
   if (full?.section8_environment) {
     const e = full.section8_environment;
     const env: string[] = [];
     if (e.floor) env.push(String(e.floor));
-    if (e.elevator) env.push("엘리베이터 있음");
-    if (e.stairs) env.push("계단 있음");
-    if (e.thresholds) env.push("문턱 있음");
+    if (e.elevator) env.push("엘리베이터");
+    if (e.stairs) env.push("계단");
+    if (e.thresholds) env.push("문턱");
     if (e.toilet_location) env.push(`화장실 ${e.toilet_location}`);
-    if (e.opinion) env.push(norm(e.opinion));
-    if (env.length) parts.push(`주거환경: ${env.join(", ")}`);
+    if (env.length) parts.push(env.join(", "));
   }
-  if (intake?.counselor_opinion) {
-    parts.push(`상담자의견: ${norm(intake.counselor_opinion)}`);
-  }
-  if (senior?.nursing_needs && !parts.some((p) => p.includes(String(senior.nursing_needs)))) {
-    parts.push(`요양 욕구: ${norm(senior.nursing_needs)}`);
-  }
-  return parts.filter(Boolean).join("\n");
+  const summary = summarize(intake?.counselor_opinion, 80);
+  if (summary) parts.push(summary);
+  return parts.filter(Boolean).join(" / ");
 }
 
 function buildServiceNote(intake: any, senior: any): string {
-  const lines: string[] = [];
-  if (intake?.individual_needs) lines.push(`개별욕구: ${norm(intake.individual_needs)}`);
-  if (intake?.counselor_opinion && intake?.counselor_opinion !== intake?.individual_needs) {
-    lines.push(`상담자의견: ${norm(intake.counselor_opinion)}`);
-  }
-  if (!lines.length && senior?.nursing_needs) lines.push(norm(senior.nursing_needs));
-  return lines.filter(Boolean).join("\n");
+  const needs = summarize(intake?.individual_needs, 100);
+  if (needs) return needs;
+  if (senior?.nursing_needs) return summarize(senior.nursing_needs, 100);
+  return "";
 }
 
 export function buildHandoverAutofill(args: {

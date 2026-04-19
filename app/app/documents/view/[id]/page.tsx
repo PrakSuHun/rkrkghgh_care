@@ -406,9 +406,6 @@ export default function SavedDocViewPage() {
           <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(content, null, 2)}</pre>
         )}
 
-        <footer className="mt-8 pt-4 border-t text-xs text-gray-500 text-right no-print">
-          생성일: {new Date(doc.created_at).toLocaleDateString("ko-KR")}
-        </footer>
       </article>
 
       {!editMode && (

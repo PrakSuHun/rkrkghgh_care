@@ -466,9 +466,6 @@ export default function IntakeFormPage() {
 
         <p className="text-center text-sm mt-6">{CENTER_INFO.name}</p>
 
-        <footer className="mt-8 pt-4 border-t text-xs text-gray-500 text-right no-print">
-          생성일: {new Date(intake.created_at).toLocaleDateString("ko-KR")}
-        </footer>
       </article>
 
       {!editing && (

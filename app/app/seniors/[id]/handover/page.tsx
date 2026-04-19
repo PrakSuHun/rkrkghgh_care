@@ -321,24 +321,33 @@ export default function HandoverPage() {
         </div>
       </div>
 
-      <article className="print-sheet max-w-5xl mx-auto bg-white border p-6 sm:p-10 mb-4">
+      <article className="print-sheet handover-sheet max-w-5xl mx-auto bg-white border p-6 sm:p-10 mb-4">
         <h1 className="text-3xl font-bold text-center mb-5">업무 인계·인수 확인서</h1>
 
         {/* 1. 수급자 정보 */}
-        <table className="w-full border-collapse mb-3">
+        <table className="w-full border-collapse mb-3" style={{ tableLayout: "fixed" }}>
+          <colgroup>
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "13%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "15%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "37%" }} />
+          </colgroup>
           <tbody>
             <tr>
-              <th className={`${thL} w-12`} rowSpan={2}>수<br/>급<br/>자<br/>정<br/>보</th>
-              <th className={`${thL} w-20`}>성 명</th>
-              <td className={`${td}${ec(ed.recipient_name)}`}><Inline value={ed.recipient_name} onChange={(v) => update("recipient_name", v)} editing={editing} /></td>
-              <th className={`${thL} w-16`}>생년월일</th>
-              <td className={`${td}${ec(ed.birth_date)}`} style={{ width: "7rem" }}><Inline value={ed.birth_date} onChange={(v) => update("birth_date", v)} editing={editing} width="6rem" /></td>
-              <th className={`${thL} w-16`}>연락처</th>
-              <td className={`${td}${ec(ed.phone)}`}><Inline value={ed.phone} onChange={(v) => update("phone", v)} editing={editing} width="12rem" /></td>
+              <th className={thL} rowSpan={2}>수<br/>급<br/>자<br/>정<br/>보</th>
+              <th className={thL}>성 명</th>
+              <td className={`${td}${ec(ed.recipient_name)}`}><Inline value={ed.recipient_name} onChange={(v) => update("recipient_name", v)} editing={editing} width="100%" /></td>
+              <th className={thL}>생년월일</th>
+              <td className={`${td}${ec(ed.birth_date)}`}><Inline value={ed.birth_date} onChange={(v) => update("birth_date", v)} editing={editing} width="100%" /></td>
+              <th className={thL}>연락처</th>
+              <td className={`${td}${ec(ed.phone)}`}><Inline value={ed.phone} onChange={(v) => update("phone", v)} editing={editing} width="100%" /></td>
             </tr>
             <tr>
               <th className={thL}>보호자명</th>
-              <td className={`${td}${ec(ed.guardian_name)}`}><Inline value={ed.guardian_name} onChange={(v) => update("guardian_name", v)} editing={editing} /></td>
+              <td className={`${td}${ec(ed.guardian_name)}`}><Inline value={ed.guardian_name} onChange={(v) => update("guardian_name", v)} editing={editing} width="100%" /></td>
               <th className={thL}>주 소</th>
               <td className={`${td}${ec(ed.address)}`} colSpan={3}><Inline value={ed.address} onChange={(v) => update("address", v)} editing={editing} width="100%" /></td>
             </tr>
@@ -519,11 +528,8 @@ export default function HandoverPage() {
         )}
 
         <p className="text-center text-xs mt-8">장기요양 고시 제9조 비밀보장의 원칙에 따라 수급자의 정보를 타인에게 누설하거나 제공하지 않는다.</p>
-        <p className="text-center text-sm font-semibold mt-2">재가노인복지시설 {CENTER_INFO.name}</p>
+        <p className="text-center text-sm font-semibold mt-2">{CENTER_INFO.name}</p>
 
-        <footer className="mt-8 pt-4 border-t text-xs text-gray-500 text-right no-print">
-          출력일: {new Date().toLocaleDateString("ko-KR")}
-        </footer>
       </article>
     </>
   );
