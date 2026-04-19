@@ -11,6 +11,7 @@ export async function generateCounselingBatch(opts: {
   topic?: string;
   date: string;
   method?: string;
+  counselor?: string;
   workers: Array<{ id: number; name: string; seniors?: Array<{ name: string; grade: string | null; summary: string | null }> }>;
   previousLogs?: Array<{ worker_name: string; summary: string; action: string; created_at: string }>;
 }): Promise<Array<{ workerId: number; workerName: string; summary: string; action: string; prevResult: string }>> {
@@ -30,7 +31,7 @@ ${PERSONA_WRITING_RULES}
 ${opts.topic ? `상담 주제: "${opts.topic}"` : ""}
 상담일자: ${opts.date}
 상담방법: ${opts.method ?? "대면"}
-상담자명: 권오성
+상담자명: ${opts.counselor || "권오성"}
 
 ${prevText}
 

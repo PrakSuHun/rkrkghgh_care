@@ -9,6 +9,7 @@ export async function POST(req: Request) {
   const topic = String(body.topic ?? "").trim();
   const date = String(body.date ?? new Date().toISOString().slice(0, 10));
   const method = String(body.method ?? "대면");
+  const counselor = String(body.counselor ?? "권오성");
   const workerIds: number[] = Array.isArray(body.worker_ids) ? body.worker_ids : [];
 
   if (workerIds.length === 0) return NextResponse.json({ error: "요양보호사를 선택해주세요" }, { status: 400 });
@@ -48,7 +49,7 @@ export async function POST(req: Request) {
   }));
 
   const results = await generateCounselingBatch({
-    topic: topic || undefined, date, method,
+    topic: topic || undefined, date, method, counselor,
     workers: workers.map((w: any) => ({
       id: w.id,
       name: w.name,
@@ -85,7 +86,7 @@ export async function POST(req: Request) {
       title: `${r.workerName ?? (r as any).worker_name ?? ""} · ${date}`,
       worker_id: wid,
       content: {
-        counselor: "권오성",
+        counselor,
         method,
         date,
         worker_name: r.workerName ?? (r as any).worker_name,

@@ -27,6 +27,7 @@ export default function NewSeniorPage() {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+
   const uploadAndExtract = async () => {
     if (!file) return;
     setErr(null); setUploading(true);

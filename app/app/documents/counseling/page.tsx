@@ -15,6 +15,7 @@ export default function CounselingPage() {
   const [topic, setTopic] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [method, setMethod] = useState("대면");
+  const [counselor, setCounselor] = useState("권오성");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [generating, setGenerating] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -34,7 +35,7 @@ export default function CounselingPage() {
     try {
       const res = await fetch("/api/counseling/batch", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, date, method, worker_ids: Array.from(selectedIds) }),
+        body: JSON.stringify({ topic, date, method, counselor, worker_ids: Array.from(selectedIds) }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error);
@@ -74,7 +75,10 @@ export default function CounselingPage() {
           </div>
           <div>
             <label className="text-xs text-gray-500">상담자명</label>
-            <input value="권오성" disabled className="w-full border rounded-lg px-3 py-3 text-base mt-1 bg-gray-50 text-gray-700" />
+            <select value={counselor} onChange={(e) => setCounselor(e.target.value)} className="w-full border rounded-lg px-3 py-3 text-base mt-1">
+              <option value="권오성">권오성</option>
+              <option value="봉현옥">봉현옥</option>
+            </select>
           </div>
         </div>
         <div>

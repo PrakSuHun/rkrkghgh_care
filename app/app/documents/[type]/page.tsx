@@ -28,11 +28,11 @@ function AutoTextarea({ value, onChange }: { value: string; onChange: (v: string
   );
 }
 
-const TYPE_META: Record<string, { label: string; needSenior?: boolean; needWorker?: boolean; needMonth?: boolean; needFromTo?: boolean; needUserPrompt?: boolean }> = {
+const TYPE_META: Record<string, { label: string; needSenior?: boolean; needWorker?: boolean; needMonth?: boolean; needFromTo?: boolean; needUserPrompt?: boolean; needWriter?: boolean }> = {
   needs_assessment: { label: "욕구사정지", needSenior: true },
   fall_assessment: { label: "낙상평가지", needSenior: true },
   senior_handover: { label: "수급자 인수인계서", needSenior: true, needFromTo: true },
-  monthly_work_report: { label: "업무체계보고서", needSenior: true, needMonth: true, needUserPrompt: true },
+  monthly_work_report: { label: "업무체계보고서", needSenior: true, needMonth: true, needUserPrompt: true, needWriter: true },
 };
 
 export default function DocTypePage() {
@@ -49,6 +49,7 @@ export default function DocTypePage() {
   const [toWorkerId, setToWorkerId] = useState("");
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [userPrompt, setUserPrompt] = useState("");
+  const [writer, setWriter] = useState("권오성");
 
   const [doc, setDoc] = useState<DocOutput | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -84,9 +85,10 @@ export default function DocTypePage() {
       if (meta.needMonth) body.month = month;
       if (meta.needFromTo) {
         if (fromWorkerId) body.from_worker_id = fromWorkerId;
-        if (meta.needUserPrompt && userPrompt.trim()) body.user_prompt = userPrompt.trim();
         if (toWorkerId) body.to_worker_id = toWorkerId;
       }
+      if (meta.needUserPrompt && userPrompt.trim()) body.user_prompt = userPrompt.trim();
+      if (meta.needWriter) body.writer = writer;
       const res = await fetch("/api/documents/generate", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -194,6 +196,15 @@ export default function DocTypePage() {
               <div>
                 <label className="text-xs text-gray-500">년월</label>
                 <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm mt-1" />
+              </div>
+            )}
+            {meta.needWriter && (
+              <div>
+                <label className="text-xs text-gray-500">작성자</label>
+                <select value={writer} onChange={(e) => setWriter(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm mt-1">
+                  <option value="권오성">권오성</option>
+                  <option value="봉현옥">봉현옥</option>
+                </select>
               </div>
             )}
             {meta.needFromTo && (

@@ -103,6 +103,7 @@ export async function generateNeedsAssessmentFull(ctx: {
   caregivers?: string[];
   previousAssessment?: any;
   surveyType?: string;
+  extra?: Record<string, any>;
 }): Promise<NeedsAssessmentFull> {
   const model = getClient().getGenerativeModel({
     model: "gemini-2.5-flash",
@@ -144,6 +145,9 @@ ${JSON.stringify(ctx.senior, null, 2)}
 
 [초기상담기록지(있다면)]
 ${ctx.intake ? JSON.stringify(ctx.intake, null, 2) : "(없음)"}
+
+[추가 입력 정보(사용자가 생성 직전 직접 입력한 값 — 반드시 반영)]
+${ctx.extra && Object.keys(ctx.extra).length ? JSON.stringify(ctx.extra, null, 2) : "(없음)"}
 
 [담당 요양보호사]
 ${(ctx.caregivers ?? []).join(", ") || "미배정"}

@@ -173,6 +173,7 @@ export default function SeniorDetailPage() {
 
       <DocumentsSection seniorId={Number(id)} intakePdfPath={s.intake_pdf_path} />
 
+
       <section className="bg-white border rounded-xl p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">

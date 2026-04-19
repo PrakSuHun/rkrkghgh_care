@@ -26,6 +26,10 @@ export type IntakeExtracted = {
   guardian_phone?: string | null;
   num_children?: string | null;
   cohabit?: string | null;
+  cohabit_type?: string | null;
+  meal_soft?: boolean | null;
+  meal_note?: string | null;
+  vision_note?: string | null;
   walking?: string | null;
   emotion?: string | null;
   personality?: string | null;
@@ -71,7 +75,8 @@ const PROMPT = `${NO_HALLUCINATION_RULES}
   "guardian_relation": "보호자 관계 (예: 큰아들)",
   "guardian_phone": "연락처 (가장 대표 번호 하나)",
   "num_children": "자녀수 텍스트 그대로 (예: 3남 1녀)",
-  "cohabit": "동거여부 (유/무/왕래 주5회 등 원문)",
+  "cohabit_type": "유 | 무 | 왕래 중 하나 (체크된 항목)",
+  "cohabit": "동거여부 부연 설명 (예: 주1~2회, 배우자 동거, 같은 건물 2층 등)",
   "walking": "자립 | 도움 | 완전도움",
   "emotion": "안정됨 | 조금불안 | 불안정",
   "personality": "적극 | 보통 | 조용",
@@ -80,7 +85,9 @@ const PROMPT = `${NO_HALLUCINATION_RULES}
   "toilet": "자립 | 도움 | 완전도움",
   "dentition": "의치/잔존치아/틀니/기타 중 체크된 것 원문",
   "bowel": "정상 | 설사 | 변비 | 기저귀 | 소변주머니 중 체크",
-  "meal_form": "일반식 | 다짐찬 | 유동식(죽) | 경관식",
+  "meal_form": "일반식 | 유동식(죽) | 경관식 중 하나",
+  "meal_soft": "다짐찬 체크 여부 (true/false/null)",
+  "meal_note": "식사 관련 부연 설명 (예: 부드러운 음식 위주)",
   "vision": "양호 | 불가능 | 안경착용 등",
   "hearing": "양호 | 큰소리로 말할 경우 가능 | 보청기 착용 등",
   "speech": "양호 | 묻는 말에만 대답 | 불가능",
@@ -141,7 +148,8 @@ const TEXT_PROMPT = `${NO_HALLUCINATION_RULES}
   "guardian_relation": "보호자 관계 (예: 큰아들)",
   "guardian_phone": "연락처 (가장 대표 번호 하나)",
   "num_children": "자녀수 텍스트 그대로 (예: 3남 1녀)",
-  "cohabit": "동거여부 (유/무/왕래 주5회 등 원문)",
+  "cohabit_type": "유 | 무 | 왕래 중 하나 (체크된 항목)",
+  "cohabit": "동거여부 부연 설명 (예: 주1~2회, 배우자 동거, 같은 건물 2층 등)",
   "walking": "자립 | 도움 | 완전도움",
   "emotion": "안정됨 | 조금불안 | 불안정",
   "personality": "적극 | 보통 | 조용",
@@ -150,7 +158,9 @@ const TEXT_PROMPT = `${NO_HALLUCINATION_RULES}
   "toilet": "자립 | 도움 | 완전도움",
   "dentition": "의치/잔존치아/틀니/기타 중 체크된 것 원문",
   "bowel": "정상 | 설사 | 변비 | 기저귀 | 소변주머니 중 체크",
-  "meal_form": "일반식 | 다짐찬 | 유동식(죽) | 경관식",
+  "meal_form": "일반식 | 유동식(죽) | 경관식 중 하나",
+  "meal_soft": "다짐찬 체크 여부 (true/false/null)",
+  "meal_note": "식사 관련 부연 설명 (예: 부드러운 음식 위주)",
   "vision": "양호 | 불가능 | 안경착용 등",
   "hearing": "양호 | 큰소리로 말할 경우 가능 | 보청기 착용 등",
   "speech": "양호 | 묻는 말에만 대답 | 불가능",

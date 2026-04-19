@@ -114,7 +114,7 @@ async function loadCaregivers(seniorId: number) {
 
 export async function generateDocument(
   type: DocType,
-  params: { seniorId?: number; workerId?: number; month?: string; fromWorkerId?: number; toWorkerId?: number; userPrompt?: string },
+  params: { seniorId?: number; workerId?: number; month?: string; fromWorkerId?: number; toWorkerId?: number; userPrompt?: string; writer?: string },
 ): Promise<DocOutput> {
   switch (type) {
     case "needs_assessment": {
@@ -227,7 +227,7 @@ JSON 스키마로만 응답:
           { label: "worker_name", text: workerNames },
           { label: "month", text: month },
           { label: "date", text: today },
-          { label: "writer", text: "권오성 (사회복지사)" },
+          { label: "writer", text: params.writer || "권오성" },
           { label: "center", text: CENTER_INFO.name },
           { label: "state", text: p.state ?? "" },
           { label: "caregiver_action", text: p.caregiver_action ?? "" },

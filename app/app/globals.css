@@ -54,9 +54,43 @@ button, a {
   touch-action: manipulation;
 }
 
+/* 빈 항목 강조 — 화면에서만 표시, 인쇄 시 제거 */
+.empty-mark {
+  background: #fce7f3 !important;
+  border: 1px dashed #ec4899 !important;
+  position: relative;
+}
+.empty-mark-inline {
+  display: inline-block;
+  min-width: 3rem;
+  min-height: 1rem;
+  padding: 0 6px;
+  background: #fce7f3;
+  border: 1px dashed #ec4899;
+  border-radius: 3px;
+  font-size: 10px;
+  color: #be185d;
+  line-height: 1.4;
+  vertical-align: middle;
+}
+.empty-mark-inline::before { content: "미입력"; }
+
 /* 인쇄 스타일 */
 @media print {
   .no-print, nav, header { display: none !important; }
+  .empty-mark {
+    background: transparent !important;
+    border-color: #000 !important;
+    border-style: solid !important;
+  }
+  .empty-mark-inline {
+    background: transparent !important;
+    border: 0 !important;
+    color: transparent !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+  }
+  .empty-mark-inline::before { content: "" !important; }
   body { background: white !important; padding: 0 !important; }
   .print-sheet {
     border: none !important;

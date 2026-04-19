@@ -29,6 +29,7 @@ export async function POST(req: Request) {
       fromWorkerId: body.from_worker_id ? Number(body.from_worker_id) : undefined,
       toWorkerId: body.to_worker_id ? Number(body.to_worker_id) : undefined,
       userPrompt: body.user_prompt,
+      writer: body.writer,
     });
     return NextResponse.json({ doc });
   } catch (e: any) {

@@ -11,8 +11,9 @@ type Dict = Record<string, any>;
 // ---------- editable helpers ----------
 function Cb({ on, label, onToggle }: { on: boolean; label: string; onToggle?: () => void }) {
   return (
-    <span className="nf-cb" onClick={onToggle}>
-      {on ? "[✓]" : "[ ]"} {label}
+    <span className="nf-cb inline-flex items-baseline gap-1" onClick={onToggle}>
+      <span className="text-base leading-none">{on ? "■" : "□"}</span>
+      <span>{label}</span>
     </span>
   );
 }
@@ -88,6 +89,44 @@ export default function NeedsAssessmentFullPage() {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [dirty]);
 
+  // 빈 셀 자동 표시 — td/nf-row/standalone textarea 모두 스캔
+  useEffect(() => {
+    if (!full) return;
+    const checkContainer = (el: Element) => {
+      const inputs = el.querySelectorAll<HTMLInputElement>(".nf-edit-inline");
+      const texts = el.querySelectorAll<HTMLTextAreaElement>(".nf-edit-text");
+      const cbs = el.querySelectorAll(".nf-cb");
+      const total = inputs.length + texts.length + cbs.length;
+      if (total === 0) { el.classList.remove("empty-mark"); return; }
+      const anyInput = Array.from(inputs).some((i) => i.value.trim() !== "");
+      const anyText = Array.from(texts).some((t) => t.value.trim() !== "");
+      const anyCb = Array.from(cbs).some((c) => (c.textContent ?? "").includes("■"));
+      el.classList.toggle("empty-mark", !anyInput && !anyText && !anyCb);
+    };
+    const rescan = () => {
+      const sheet = document.querySelector(".nf-sheet");
+      if (!sheet) return;
+      sheet.querySelectorAll<HTMLTableCellElement>("td").forEach((cell) => {
+        if (cell.classList.contains("nf-score-cell")) return;
+        checkContainer(cell);
+      });
+      sheet.querySelectorAll<HTMLElement>(".nf-row").forEach(checkContainer);
+      sheet.querySelectorAll<HTMLElement>(".nf-free > .nf-edit-text").forEach((t) => {
+        const ta = t as HTMLTextAreaElement;
+        t.classList.toggle("empty-mark", (ta.value ?? "").trim() === "");
+      });
+      sheet.querySelectorAll<HTMLTableRowElement>("tr").forEach((row) => {
+        const scores = row.querySelectorAll<HTMLTableCellElement>(".nf-score-cell");
+        if (scores.length === 0) return;
+        const hasOn = Array.from(scores).some((s) => s.classList.contains("on"));
+        scores.forEach((s) => s.classList.toggle("empty-mark", !hasOn));
+      });
+    };
+    const t = setTimeout(rescan, 50);
+    const interval = setInterval(rescan, 800);
+    return () => { clearTimeout(t); clearInterval(interval); };
+  }, [full]);
+
   const update = (path: string[], value: any) => {
     if (!full) return;
     const next = structuredClone(full);
@@ -144,7 +183,10 @@ export default function NeedsAssessmentFullPage() {
     if (full && !confirm("AI로 다시 생성하면 직접 수정한 내용이 덮어써집니다. 진행할까요?")) return;
     setGenerating(true);
     try {
-      const res = await fetch(`/api/seniors/${id}/needs-assessment/generate`, { method: "POST" });
+      const res = await fetch(`/api/seniors/${id}/needs-assessment/generate`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ extra: {} }),
+      });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error);
       setFull(j.data);
@@ -240,6 +282,7 @@ export default function NeedsAssessmentFullPage() {
           </button>
         </div>
       </div>
+
     </>
   );
 }

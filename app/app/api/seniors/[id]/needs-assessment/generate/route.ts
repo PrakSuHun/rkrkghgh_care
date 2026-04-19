@@ -4,8 +4,13 @@ import { generateNeedsAssessmentFull } from "@/lib/needsAssessmentFull";
 
 export const maxDuration = 300;
 
-export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  let extra: Record<string, any> = {};
+  try {
+    const body = await req.json();
+    if (body && typeof body.extra === "object" && body.extra) extra = body.extra;
+  } catch { /* no body is fine */ }
   const { data: senior, error } = await supabase.from("seniors").select("*").eq("id", id).maybeSingle();
   if (error || !senior) return NextResponse.json({ error: "대상자 없음" }, { status: 404 });
 
@@ -27,6 +32,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       caregivers: cgNames,
       previousAssessment: isFirst ? null : senior.needs_assessment_full,
       surveyType,
+      extra,
     });
 
     await supabase
