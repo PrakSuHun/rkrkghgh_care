@@ -400,35 +400,31 @@ export default function HandoverPage() {
               </td>
               <td className={`${td}${ecAny(ed.dementia_yes, ed.dementia_symptom, ed.dementia_level)}`} style={{ verticalAlign: "top" }}>
                 <div className="space-y-1">
-                  <div>
+                  <div className="flex items-center gap-3 flex-wrap">
                     <Cb on={ed.dementia_yes === true} label="유" onToggle={() => update("dementia_yes", ed.dementia_yes === true ? null : true)} editing={editing} />
-                    <span className="text-sm ml-2">(
+                    <span className="text-sm">(
                       <Cb on={ed.dementia_level === "상"} label="상" onToggle={() => update("dementia_level", ed.dementia_level === "상" ? "" : "상")} editing={editing} />
                       <Cb on={ed.dementia_level === "중"} label="중" onToggle={() => update("dementia_level", ed.dementia_level === "중" ? "" : "중")} editing={editing} />
                       <Cb on={ed.dementia_level === "하"} label="하" onToggle={() => update("dementia_level", ed.dementia_level === "하" ? "" : "하")} editing={editing} />
                     )</span>
+                    <Cb on={ed.dementia_yes === false} label="무" onToggle={() => update("dementia_yes", ed.dementia_yes === false ? null : false)} editing={editing} />
                   </div>
                   <div>
                     <span className="text-xs text-gray-700">※ 치매행동·증상:</span>
                     <div className="mt-0.5"><Block value={ed.dementia_symptom} onChange={(v) => update("dementia_symptom", v)} editing={editing} rows={2} /></div>
                   </div>
-                  <div>
-                    <Cb on={ed.dementia_yes === false} label="무" onToggle={() => update("dementia_yes", ed.dementia_yes === false ? null : false)} editing={editing} />
-                  </div>
                 </div>
               </td>
               <td className={`${td}${ecAny(ed.medication_yes, ed.medication_count, ed.medication_list)}`} style={{ verticalAlign: "top" }}>
                 <div className="space-y-1">
-                  <div>
+                  <div className="flex items-center gap-3 flex-wrap">
                     <Cb on={ed.medication_yes === true} label="유" onToggle={() => update("medication_yes", ed.medication_yes === true ? null : true)} editing={editing} />
-                    <span className="text-sm ml-1">(<Inline value={ed.medication_count} onChange={(v) => update("medication_count", v)} editing={editing} width="3rem" /> 가지)</span>
+                    <span className="text-sm">(<Inline value={ed.medication_count} onChange={(v) => update("medication_count", v)} editing={editing} width="3rem" /> 가지)</span>
+                    <Cb on={ed.medication_yes === false} label="무" onToggle={() => update("medication_yes", ed.medication_yes === false ? null : false)} editing={editing} />
                   </div>
                   <div>
                     <span className="text-xs text-gray-700">※ 복용중인 약:</span>
                     <div className="mt-0.5"><Block value={ed.medication_list} onChange={(v) => update("medication_list", v)} editing={editing} rows={2} /></div>
-                  </div>
-                  <div>
-                    <Cb on={ed.medication_yes === false} label="무" onToggle={() => update("medication_yes", ed.medication_yes === false ? null : false)} editing={editing} />
                   </div>
                 </div>
               </td>
