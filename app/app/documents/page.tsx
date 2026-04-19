@@ -42,6 +42,7 @@ export default function DocumentsPage() {
   const docLink = (d: SavedDoc) => {
     if (d.doc_type === "needs_assessment" && d.senior_id) return `/seniors/${d.senior_id}/needs-assessment?from=documents`;
     if (d.doc_type === "fall_assessment" && d.senior_id && d.content) return `/seniors/${d.senior_id}/fall-assessment/${d.content?.fall_id ?? ""}?from=documents`;
+    if (d.doc_type === "senior_handover" && d.senior_id) return `/seniors/${d.senior_id}/handover?from=documents`;
     return `/documents/view/${d.id}`;
   };
 

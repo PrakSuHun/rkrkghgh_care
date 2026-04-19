@@ -360,6 +360,14 @@ function DocumentsSection({ seniorId, intakePdfPath }: { seniorId: number; intak
             <p className="text-xs text-gray-400">공단 5페이지 서식</p>
           </div>
         </Link>
+
+        <Link href={`/seniors/${seniorId}/handover`}>
+          <div className="min-h-[64px] border rounded-lg p-3 active:bg-gray-50 flex flex-col gap-1">
+            <ClipboardList className="w-4 h-4 text-indigo-600" />
+            <p className="text-sm font-medium">인수인계서</p>
+            <p className="text-xs text-gray-400">업무 인계·인수 확인서</p>
+          </div>
+        </Link>
       </div>
 
       <div>

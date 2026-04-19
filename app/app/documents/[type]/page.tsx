@@ -77,6 +77,13 @@ export default function DocTypePage() {
       router.push(`/seniors/${seniorId}/fall-assessment/latest?from=documents`);
       return;
     }
+    if (type === "senior_handover" && seniorId) {
+      const params = new URLSearchParams({ from: "documents" });
+      if (fromWorkerId) params.set("from_worker_id", fromWorkerId);
+      if (toWorkerId) params.set("to_worker_id", toWorkerId);
+      router.push(`/seniors/${seniorId}/handover?${params.toString()}`);
+      return;
+    }
     setGenerating(true); setErr(null);
     try {
       const body: any = { type };
