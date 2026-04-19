@@ -227,7 +227,7 @@ JSON 스키마로만 응답:
           { label: "worker_name", text: workerNames },
           { label: "month", text: month },
           { label: "date", text: today },
-          { label: "writer", text: params.writer || "권오성" },
+          { label: "writer", text: params.writer || CENTER_INFO.head },
           { label: "center", text: CENTER_INFO.name },
           { label: "state", text: p.state ?? "" },
           { label: "caregiver_action", text: p.caregiver_action ?? "" },

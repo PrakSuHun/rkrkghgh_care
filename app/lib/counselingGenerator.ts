@@ -31,7 +31,7 @@ ${PERSONA_WRITING_RULES}
 ${opts.topic ? `상담 주제: "${opts.topic}"` : ""}
 상담일자: ${opts.date}
 상담방법: ${opts.method ?? "대면"}
-상담자명: ${opts.counselor || "권오성"}
+상담자명: ${opts.counselor || "박현식"}
 
 ${prevText}
 

@@ -355,7 +355,7 @@ export default function SavedDocViewPage() {
                   </td>
                   <th className="border border-black bg-gray-50 px-3 py-3 w-28 text-center align-middle">상담자명</th>
                   <td className="border border-black px-3 py-3">
-                    {editMode ? <TextCell value={content.counselor ?? ""} onChange={(v) => updateField("counselor", v)} label="상담자명" /> : (content.counselor ?? "권오성")}
+                    {editMode ? <TextCell value={content.counselor ?? ""} onChange={(v) => updateField("counselor", v)} label="상담자명" /> : (content.counselor ?? "박현식")}
                   </td>
                 </tr>
                 <tr>
@@ -399,7 +399,7 @@ export default function SavedDocViewPage() {
             </table>
             <div className="text-center text-sm mt-6">
               <p>{content.date}</p>
-              <p className="mt-2">상담자 : {content.counselor ?? "권오성"} &nbsp; (서명)</p>
+              <p className="mt-2">상담자 : {content.counselor ?? "박현식"} &nbsp; (서명)</p>
             </div>
           </div>
         ) : (

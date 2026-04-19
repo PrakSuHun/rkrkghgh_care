@@ -49,7 +49,7 @@ export default function DocTypePage() {
   const [toWorkerId, setToWorkerId] = useState("");
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [userPrompt, setUserPrompt] = useState("");
-  const [writer, setWriter] = useState("권오성");
+  const [writer, setWriter] = useState("박현식");
 
   const [doc, setDoc] = useState<DocOutput | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -209,6 +209,7 @@ export default function DocTypePage() {
               <div>
                 <label className="text-xs text-gray-500">작성자</label>
                 <select value={writer} onChange={(e) => setWriter(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm mt-1">
+                  <option value="박현식">박현식</option>
                   <option value="권오성">권오성</option>
                   <option value="봉현옥">봉현옥</option>
                 </select>

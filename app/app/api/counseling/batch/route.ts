@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   const topic = String(body.topic ?? "").trim();
   const date = String(body.date ?? new Date().toISOString().slice(0, 10));
   const method = String(body.method ?? "대면");
-  const counselor = String(body.counselor ?? "권오성");
+  const counselor = String(body.counselor ?? "박현식");
   const workerIds: number[] = Array.isArray(body.worker_ids) ? body.worker_ids : [];
 
   if (workerIds.length === 0) return NextResponse.json({ error: "요양보호사를 선택해주세요" }, { status: 400 });

@@ -15,7 +15,7 @@ export default function CounselingPage() {
   const [topic, setTopic] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [method, setMethod] = useState("대면");
-  const [counselor, setCounselor] = useState("권오성");
+  const [counselor, setCounselor] = useState("박현식");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [generating, setGenerating] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -76,6 +76,7 @@ export default function CounselingPage() {
           <div>
             <label className="text-xs text-gray-500">상담자명</label>
             <select value={counselor} onChange={(e) => setCounselor(e.target.value)} className="w-full border rounded-lg px-3 py-3 text-base mt-1">
+              <option value="박현식">박현식</option>
               <option value="권오성">권오성</option>
               <option value="봉현옥">봉현옥</option>
             </select>
