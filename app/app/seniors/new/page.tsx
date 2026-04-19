@@ -21,6 +21,7 @@ export default function NewSeniorPage() {
   const [recordOpen, setRecordOpen] = useState(false);
 
   const [manualText, setManualText] = useState("");
+  const [seniorName, setSeniorName] = useState("");
 
   const [intakeId, setIntakeId] = useState<number | null>(null);
   const [extracted, setExtracted] = useState<Extracted | null>(null);
@@ -67,17 +68,21 @@ export default function NewSeniorPage() {
   };
 
   const submitManual = async () => {
+    if (!seniorName.trim()) { setErr("대상자 이름을 입력해주세요"); return; }
     if (!manualText.trim()) { setErr("내용을 입력해주세요"); return; }
     setErr(null); setExtracting(true);
     try {
+      const prefixed = `대상자 이름: ${seniorName.trim()}\n\n${manualText}`;
       const res = await fetch("/api/intake-forms/from-text", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: manualText }),
+        body: JSON.stringify({ text: prefixed }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.error ?? "AI 추출 실패");
       setIntakeId(j.intake.id);
-      setExtracted(j.intake.extracted_data ?? {});
+      const data = j.intake.extracted_data ?? {};
+      if (!data.name) data.name = seniorName.trim();
+      setExtracted(data);
     } catch (e: any) {
       setErr(e.message);
     } finally {
@@ -88,7 +93,9 @@ export default function NewSeniorPage() {
   const onRecordingComplete = (result: any) => {
     if (result?.intake) {
       setIntakeId(result.intake.id);
-      setExtracted(result.intake.extracted_data ?? {});
+      const data = result.intake.extracted_data ?? {};
+      if (!data.name && seniorName.trim()) data.name = seniorName.trim();
+      setExtracted(data);
     }
   };
 
@@ -148,8 +155,18 @@ export default function NewSeniorPage() {
                 <h2 className="font-semibold">녹음으로 초기상담기록지 생성</h2>
               </div>
               <p className="text-xs text-gray-500">상담 내용을 녹음하면 AI가 초기상담기록지 양식에 맞춰 자동으로 추출합니다. 추출된 내용은 다음 단계에서 수정할 수 있습니다.</p>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">대상자 이름 <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={seniorName}
+                  onChange={(e) => setSeniorName(e.target.value)}
+                  placeholder="예: 전대순"
+                  className="w-full min-h-[40px] border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
               <button
-                onClick={() => setRecordOpen(true)}
+                onClick={() => { if (!seniorName.trim()) { setErr("대상자 이름을 입력해주세요"); return; } setErr(null); setRecordOpen(true); }}
                 disabled={extracting}
                 className="w-full min-h-[44px] bg-red-500 active:bg-red-700 text-white rounded-lg font-medium disabled:opacity-50 inline-flex items-center justify-center gap-2"
               >
@@ -167,6 +184,16 @@ export default function NewSeniorPage() {
                 <h2 className="font-semibold">수기로 초기상담기록지 생성</h2>
               </div>
               <p className="text-xs text-gray-500">상담 내용을 자유롭게 입력하면 AI가 초기상담기록지 양식에 맞춰 자동으로 정리합니다. 추출된 내용은 다음 단계에서 수정할 수 있습니다.</p>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">대상자 이름 <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={seniorName}
+                  onChange={(e) => setSeniorName(e.target.value)}
+                  placeholder="예: 전대순"
+                  className="w-full min-h-[40px] border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
               <textarea
                 value={manualText}
                 onChange={(e) => setManualText(e.target.value)}
@@ -192,12 +219,21 @@ export default function NewSeniorPage() {
                 <h2 className="font-semibold">초기상담기록지 PDF 업로드</h2>
               </div>
               <p className="text-xs text-gray-500">이미 작성된 초기상담기록지 PDF가 있다면 올려주세요. AI가 내용을 추출합니다.</p>
-              <input
-                type="file"
-                accept="application/pdf"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                className="block w-full text-sm"
-              />
+              <label className="block">
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  className="sr-only"
+                />
+                <span className="w-full min-h-[48px] border-2 border-dashed border-indigo-400 bg-indigo-50 active:bg-indigo-100 rounded-lg inline-flex items-center justify-center gap-2 px-3 py-2 cursor-pointer text-indigo-700 font-medium text-sm">
+                  <FileText className="w-4 h-4" />
+                  {file ? file.name : "PDF 파일 선택"}
+                </span>
+              </label>
+              {file && (
+                <p className="text-xs text-gray-500 text-center">선택됨 · {(file.size / 1024).toFixed(0)}KB</p>
+              )}
               <button
                 onClick={uploadAndExtract}
                 disabled={!file || uploading || extracting}
