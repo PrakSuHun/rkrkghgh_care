@@ -359,7 +359,7 @@ export default function HandoverPage() {
         <table className="w-full border-collapse mb-3">
           <tbody>
             <tr>
-              <th className={`${thL} w-12`} rowSpan={4}>방<br/>문<br/>요<br/>양<br/>/<br/>목<br/>욕</th>
+              <th className={`${thL} w-12`} rowSpan={4}>방<br/>문<br/>요<br/>양<br/>·<br/>목<br/>욕</th>
               <th className={`${thL} w-32`}>신체활동 지원<br/><span className="font-normal text-[11px]">(1회 30분)</span></th>
               <td className={`${td}${ec(ed.service_body)}`}>
                 <div className="grid grid-cols-3 gap-y-1">
