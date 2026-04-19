@@ -331,10 +331,10 @@ export default function HandoverPage() {
               <th className={`${thL} w-12`} rowSpan={2}>수<br/>급<br/>자<br/>정<br/>보</th>
               <th className={`${thL} w-20`}>성 명</th>
               <td className={`${td}${ec(ed.recipient_name)}`}><Inline value={ed.recipient_name} onChange={(v) => update("recipient_name", v)} editing={editing} /></td>
-              <th className={`${thL} w-20`}>생년월일</th>
-              <td className={`${td}${ec(ed.birth_date)}`}><Inline value={ed.birth_date} onChange={(v) => update("birth_date", v)} editing={editing} /></td>
-              <th className={`${thL} w-20`}>연락처</th>
-              <td className={`${td}${ec(ed.phone)}`}><Inline value={ed.phone} onChange={(v) => update("phone", v)} editing={editing} /></td>
+              <th className={`${thL} w-16`}>생년월일</th>
+              <td className={`${td}${ec(ed.birth_date)}`} style={{ width: "7rem" }}><Inline value={ed.birth_date} onChange={(v) => update("birth_date", v)} editing={editing} width="6rem" /></td>
+              <th className={`${thL} w-16`}>연락처</th>
+              <td className={`${td}${ec(ed.phone)}`}><Inline value={ed.phone} onChange={(v) => update("phone", v)} editing={editing} width="12rem" /></td>
             </tr>
             <tr>
               <th className={thL}>보호자명</th>
