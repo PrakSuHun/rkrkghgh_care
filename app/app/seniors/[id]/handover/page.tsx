@@ -447,20 +447,26 @@ export default function HandoverPage() {
         </table>
 
         {/* Footer table — 인계인수일 / 인계자 / 인수자 */}
-        <table className="w-full border-collapse mb-3 mt-6">
+        <table className="w-full border-collapse mb-3 mt-6" style={{ tableLayout: "fixed" }}>
+          <colgroup>
+            <col style={{ width: "14%" }} />
+            <col style={{ width: "36%" }} />
+            <col style={{ width: "14%" }} />
+            <col style={{ width: "36%" }} />
+          </colgroup>
           <tbody>
             <tr>
-              <th className={`${thL} w-24`}>인계인수일</th>
+              <th className={thL}>인계인수일</th>
               <td className={`${td}${ec(ed.handover_date)}`}>
                 <span className="text-sm">20</span>
-                <Inline value={yShort} onChange={(v) => setDatePart("y", v)} editing={editing} width="3rem" />
+                <Inline value={yShort} onChange={(v) => setDatePart("y", v)} editing={editing} width="2.5rem" />
                 <span className="text-sm"> 년 </span>
-                <Inline value={dateParts.mo} onChange={(v) => setDatePart("mo", v)} editing={editing} width="3rem" />
+                <Inline value={dateParts.mo} onChange={(v) => setDatePart("mo", v)} editing={editing} width="2.5rem" />
                 <span className="text-sm"> 월 </span>
-                <Inline value={dateParts.d} onChange={(v) => setDatePart("d", v)} editing={editing} width="3rem" />
+                <Inline value={dateParts.d} onChange={(v) => setDatePart("d", v)} editing={editing} width="2.5rem" />
                 <span className="text-sm"> 일</span>
               </td>
-              <th className={`${thL} w-24`}>인계사유</th>
+              <th className={thL}>인계사유</th>
               <td className={`${td}${ec(ed.handover_reason)}`}><Inline value={ed.handover_reason} onChange={(v) => update("handover_reason", v)} editing={editing} width="100%" /></td>
             </tr>
             <tr>
