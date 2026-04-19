@@ -75,6 +75,21 @@ button, a {
 }
 .empty-mark-inline::before { content: "미입력"; }
 
+/* 서류 양식 모바일 대응 — 화면에서 테이블이 좁아지지 않고 가로 스크롤 */
+@media screen and (max-width: 768px) {
+  .intake-sheet, .handover-sheet, .print-sheet.nf-sheet {
+    padding: 1rem !important;
+    overflow-x: auto;
+  }
+  .intake-sheet > table,
+  .handover-sheet > table {
+    min-width: 720px;
+  }
+  .intake-sheet { font-size: 12px; }
+  .handover-sheet { font-size: 12px; }
+  .nf-sheet .nf-table { min-width: 720px; }
+}
+
 /* 인쇄 스타일 */
 @media print {
   .no-print, nav, header { display: none !important; }

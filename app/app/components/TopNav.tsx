@@ -9,7 +9,7 @@ const tabs = [
   { href: "/seniors", label: "어르신", icon: Users },
   { href: "/workers", label: "요양사", icon: UserCheck },
   { href: "/assignments", label: "배정", icon: UserPlus },
-  { href: "/documents", label: "서류", icon: FileText, desktopOnly: true },
+  { href: "/documents", label: "서류", icon: FileText },
 ];
 
 export default function TopNav() {
@@ -47,7 +47,7 @@ export default function TopNav() {
       {/* 하단 탭바 (모든 화면 크기에서 사용) */}
       {pathname !== "/login" && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-40 pb-safe">
-          <div className="grid grid-cols-4 md:grid-cols-5">
+          <div className="grid grid-cols-5">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const active = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
@@ -55,7 +55,7 @@ export default function TopNav() {
                 <Link
                   key={tab.href}
                   href={tab.href}
-                  className={`${tab.desktopOnly ? "hidden md:flex" : "flex"} flex-col items-center justify-center min-h-[56px] py-1.5 gap-0.5 ${
+                  className={`flex flex-col items-center justify-center min-h-[56px] py-1.5 gap-0.5 ${
                     active ? "text-indigo-600" : "text-gray-500"
                   }`}
                 >

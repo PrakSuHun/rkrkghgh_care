@@ -55,32 +55,32 @@ export default function DocumentsPage() {
 
       <section>
         <p className="text-xs font-semibold text-gray-500 mb-2">대상자 서류</p>
-        <div className="grid grid-cols-3 gap-3">
-          <Link href="/documents/needs_assessment" className="bg-white border rounded-xl p-4 active:bg-gray-50 flex items-center gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+          <Link href="/documents/needs_assessment" className="bg-white border rounded-xl p-3 sm:p-4 active:bg-gray-50 flex items-center gap-2 sm:gap-3 min-h-[56px]">
             <FileText className="w-5 h-5 text-indigo-600 shrink-0" />
-            <p className="text-sm font-semibold">욕구사정지</p>
+            <p className="text-sm font-semibold leading-tight">욕구사정지</p>
           </Link>
-          <Link href="/documents/fall_assessment" className="bg-white border rounded-xl p-4 active:bg-gray-50 flex items-center gap-3">
+          <Link href="/documents/fall_assessment" className="bg-white border rounded-xl p-3 sm:p-4 active:bg-gray-50 flex items-center gap-2 sm:gap-3 min-h-[56px]">
             <FileText className="w-5 h-5 text-indigo-600 shrink-0" />
-            <p className="text-sm font-semibold">낙상평가지</p>
+            <p className="text-sm font-semibold leading-tight">낙상평가지</p>
           </Link>
-          <Link href="/documents/senior_handover" className="bg-white border rounded-xl p-4 active:bg-gray-50 flex items-center gap-3">
+          <Link href="/documents/senior_handover" className="bg-white border rounded-xl p-3 sm:p-4 active:bg-gray-50 flex items-center gap-2 sm:gap-3 min-h-[56px]">
             <FileText className="w-5 h-5 text-indigo-600 shrink-0" />
-            <p className="text-sm font-semibold">인수인계서</p>
+            <p className="text-sm font-semibold leading-tight">인수인계서</p>
           </Link>
         </div>
       </section>
 
       <section>
         <p className="text-xs font-semibold text-gray-500 mb-2">요양사 관리</p>
-        <div className="grid grid-cols-2 gap-3">
-          <Link href="/documents/counseling" className="bg-white border rounded-xl p-4 active:bg-gray-50 flex items-center gap-3">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <Link href="/documents/counseling" className="bg-white border rounded-xl p-3 sm:p-4 active:bg-gray-50 flex items-center gap-2 sm:gap-3 min-h-[56px]">
             <MessageSquare className="w-5 h-5 text-emerald-600 shrink-0" />
-            <p className="text-sm font-semibold">요양사 상담일지</p>
+            <p className="text-sm font-semibold leading-tight">요양사 상담일지</p>
           </Link>
-          <Link href="/documents/monthly_work_report" className="bg-white border rounded-xl p-4 active:bg-gray-50 flex items-center gap-3">
+          <Link href="/documents/monthly_work_report" className="bg-white border rounded-xl p-3 sm:p-4 active:bg-gray-50 flex items-center gap-2 sm:gap-3 min-h-[56px]">
             <FileText className="w-5 h-5 text-emerald-600 shrink-0" />
-            <p className="text-sm font-semibold">업무체계보고서</p>
+            <p className="text-sm font-semibold leading-tight">업무체계보고서</p>
           </Link>
         </div>
       </section>
