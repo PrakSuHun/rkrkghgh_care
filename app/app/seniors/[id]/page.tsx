@@ -307,9 +307,11 @@ export default function SeniorDetailPage() {
 function DocumentsSection({ seniorId, intakePdfPath }: { seniorId: number; intakePdfPath: string | null | undefined }) {
   const { data: fallRes } = useSWR<any>(`/api/fall-assessments?senior_id=${seniorId}`);
   const falls = fallRes?.assessments ?? [];
+  const { data: intakeRes } = useSWR<any>(`/api/intake-forms?senior_id=${seniorId}`);
+  const hasIntake = !!intakeRes?.intakes?.[0];
   const [intakeUrl, setIntakeUrl] = useState<string | null>(null);
 
-  const openIntake = async () => {
+  const openIntakePdf = async () => {
     if (!intakePdfPath) return;
     if (intakeUrl) { window.open(intakeUrl, "_blank"); return; }
     const r = await fetch(`/api/intake-download?path=${encodeURIComponent(intakePdfPath)}`);
@@ -320,6 +322,26 @@ function DocumentsSection({ seniorId, intakePdfPath }: { seniorId: number; intak
     }
   };
 
+  const IntakeButton = hasIntake ? (
+    <Link href={`/seniors/${seniorId}/intake-form`}>
+      <div className="min-h-[64px] border rounded-lg p-3 active:bg-gray-50 flex flex-col gap-1">
+        <FileUp className="w-4 h-4 text-indigo-600" />
+        <p className="text-sm font-medium">초기상담기록지</p>
+        <p className="text-xs text-gray-400">보기 / 편집</p>
+      </div>
+    </Link>
+  ) : (
+    <button
+      onClick={openIntakePdf}
+      disabled={!intakePdfPath}
+      className="min-h-[64px] border rounded-lg p-3 text-left active:bg-gray-50 disabled:opacity-40 flex flex-col gap-1"
+    >
+      <FileUp className="w-4 h-4 text-gray-600" />
+      <p className="text-sm font-medium">초기상담기록지</p>
+      <p className="text-xs text-gray-400">{intakePdfPath ? "PDF 보기" : "업로드 없음"}</p>
+    </button>
+  );
+
   return (
     <section className="bg-white border rounded-xl p-4 space-y-3">
       <div className="flex items-center gap-2">
@@ -328,15 +350,7 @@ function DocumentsSection({ seniorId, intakePdfPath }: { seniorId: number; intak
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <button
-          onClick={openIntake}
-          disabled={!intakePdfPath}
-          className="min-h-[64px] border rounded-lg p-3 text-left active:bg-gray-50 disabled:opacity-40 flex flex-col gap-1"
-        >
-          <FileUp className="w-4 h-4 text-gray-600" />
-          <p className="text-sm font-medium">초기상담기록지</p>
-          <p className="text-xs text-gray-400">{intakePdfPath ? "PDF 보기" : "업로드 없음"}</p>
-        </button>
+        {IntakeButton}
 
         <Link href={`/seniors/${seniorId}/needs-assessment`}>
           <div className="min-h-[64px] border rounded-lg p-3 active:bg-gray-50 flex flex-col gap-1">

@@ -4,12 +4,13 @@ import { extractIntakeFromPDF } from "@/lib/intakeExtractor";
 
 export const maxDuration = 300;
 
-export async function GET() {
-  const { data, error } = await supabase
-    .from("intake_forms")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(50);
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const seniorId = url.searchParams.get("senior_id");
+  let q = supabase.from("intake_forms").select("*").order("created_at", { ascending: false });
+  if (seniorId) q = q.eq("senior_id", Number(seniorId)).limit(1);
+  else q = q.limit(50);
+  const { data, error } = await q;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ intakes: data ?? [] });
 }
