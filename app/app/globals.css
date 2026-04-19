@@ -121,6 +121,10 @@ button, a {
   .intake-sheet .intake-block[data-print-size="8.5"] { font-size: 8.5pt !important; line-height: 1.25 !important; }
   .intake-sheet .intake-block[data-print-size="8"] { font-size: 8pt !important; line-height: 1.2 !important; }
   .intake-sheet .intake-block[data-print-size="7"] { font-size: 7pt !important; line-height: 1.15 !important; }
+  /* 표는 한 묶음으로 — 페이지 중간에 절대 잘리지 않게 */
+  .intake-sheet table { page-break-inside: avoid !important; break-inside: avoid !important; }
+  .intake-sheet tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+  .intake-sheet tbody { page-break-inside: avoid !important; break-inside: avoid !important; }
 }
 
 /* 인수인계서 — 인쇄 시 화면 UI 유지 + 편집 하이라이트만 제거 */
@@ -131,6 +135,10 @@ button, a {
   .handover-sheet select { appearance: none; -webkit-appearance: none; background: transparent !important; border: 0 !important; padding-right: 0 !important; }
   .handover-sheet textarea { resize: none !important; background: transparent !important; overflow: visible !important; height: auto !important; }
   .handover-sheet input { background: transparent !important; }
+  /* 표 한 묶음 유지 */
+  .handover-sheet table { page-break-inside: avoid !important; break-inside: avoid !important; }
+  .handover-sheet tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+  .handover-sheet tbody { page-break-inside: avoid !important; break-inside: avoid !important; }
 }
 
 /* 낙상평가지 A4 1장 */

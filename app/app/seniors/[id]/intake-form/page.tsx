@@ -23,26 +23,31 @@ function Cb({ on, label, onToggle, editing }: { on: boolean; label: string; onTo
 
 function Inline({ value, onChange, editing, width, placeholder }: { value: any; onChange: (v: string) => void; editing: boolean; width?: string; placeholder?: string }) {
   const text = value == null || value === false ? "" : String(value);
+  const len = text.length;
+  // 짧은 inline 값도 길어지면 인쇄 시 폰트 단계 축소
+  const printSize = len > 60 ? 7 : len > 40 ? 8 : len > 25 ? 8.5 : 0;
+  const sizeAttr = printSize > 0 ? { "data-print-size": String(printSize) } : {};
   if (editing) {
     return (
       <input
         type="text"
-        className="border-b border-gray-400 px-1 text-sm bg-yellow-50 focus:outline-none focus:bg-yellow-100"
+        className="intake-block border-b border-gray-400 px-1 text-sm bg-yellow-50 focus:outline-none focus:bg-yellow-100"
         style={{ width: width ?? "8rem" }}
         value={text}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
+        {...sizeAttr}
       />
     );
   }
-  return <span className="text-sm">{text || "\u00a0"}</span>;
+  return <span className="intake-block text-sm" {...sizeAttr}>{text || "\u00a0"}</span>;
 }
 
 function Block({ value, onChange, editing, rows = 2 }: { value: any; onChange: (v: string) => void; editing: boolean; rows?: number }) {
   const text = value == null ? "" : String(value);
   const len = text.length;
   // 인쇄 시 긴 글은 폰트를 점진적으로 축소해 1페이지에 담기게
-  const printSize = len > 300 ? 7 : len > 200 ? 8 : len > 120 ? 8.5 : 9.5;
+  const printSize = len > 220 ? 7 : len > 150 ? 8 : len > 90 ? 8.5 : 0;
   if (editing) {
     return (
       <textarea
@@ -50,11 +55,11 @@ function Block({ value, onChange, editing, rows = 2 }: { value: any; onChange: (
         rows={rows}
         value={text}
         onChange={(e) => onChange(e.target.value)}
-        data-print-size={printSize}
+        {...(printSize > 0 ? { "data-print-size": String(printSize) } : {})}
       />
     );
   }
-  return <span className="intake-block text-sm whitespace-pre-wrap" data-print-size={printSize}>{text}</span>;
+  return <span className="intake-block text-sm whitespace-pre-wrap" {...(printSize > 0 ? { "data-print-size": String(printSize) } : {})}>{text}</span>;
 }
 
 const DISEASE_CATEGORIES: Array<{ left: { name: string; items: string[] }; right: { name: string; items: string[] } }> = [
@@ -209,8 +214,8 @@ export default function IntakeFormPage() {
               </td>
             </tr>
             <tr>
-              <th className={`${thL} w-12`} rowSpan={15}>대<br/>상<br/>자<br/>정<br/>보</th>
-              <th className={`${thL} w-16`} rowSpan={3}>기본<br/>사항</th>
+              <th className={`${thL} w-8`} rowSpan={15}>대<br/>상<br/>자<br/>정<br/>보</th>
+              <th className={`${thL} w-8`} rowSpan={3}>기<br/>본<br/>사<br/>항</th>
               <th className={`${thL} w-20`}>수급자</th>
               <td className={`${td}${ec(ed.name)}`}><Inline value={ed.name} onChange={(v) => update("name", v)} editing={editing} /></td>
               <th className={`${thL} w-16`}>성별</th>
@@ -253,7 +258,7 @@ export default function IntakeFormPage() {
             </tr>
 
             <tr>
-              <th className={thL} rowSpan={2}>보호자</th>
+              <th className={`${thL} w-8`} rowSpan={2}>보<br/>호<br/>자</th>
               <th className={thL}>성 명</th>
               <td className={`${td}${ec(ed.guardian_name)}`} colSpan={2}><Inline value={ed.guardian_name} onChange={(v) => update("guardian_name", v)} editing={editing} /></td>
               <th className={thL}>자녀수</th>
@@ -275,7 +280,7 @@ export default function IntakeFormPage() {
             </tr>
 
             <tr>
-              <th className={thL} rowSpan={3}>일상<br/>생활</th>
+              <th className={`${thL} w-8`} rowSpan={3}>일<br/>상<br/>생<br/>활</th>
               <th className={thL}>보 행</th>
               <td className={`${td}${ec(walk)}`} colSpan={3}>
                 <Cb on={walk === "자립"} label="자립" onToggle={() => pick("walking", "자립")} editing={editing} />
@@ -320,7 +325,7 @@ export default function IntakeFormPage() {
             </tr>
 
             <tr>
-              <th className={thL} rowSpan={3}>영양</th>
+              <th className={`${thL} w-8`} rowSpan={3}>영<br/>양</th>
               <th className={thL}>치 아</th>
               <td className={`${td}${ec(ed.dentition)}`} colSpan={7}>
                 <Cb on={/유/.test(ed.dentition ?? "")} label="유" onToggle={() => update("dentition", /유/.test(ed.dentition ?? "") ? "" : "유")} editing={editing} />
@@ -358,7 +363,7 @@ export default function IntakeFormPage() {
             </tr>
 
             <tr>
-              <th className={thL} rowSpan={3}>회화</th>
+              <th className={`${thL} w-8`} rowSpan={3}>회<br/>화</th>
               <th className={thL}>보 기</th>
               <td className={`${td}${ec(visionVal)}`} colSpan={7}>
                 <Cb on={visionVal === "양호"} label="양호" onToggle={() => pick("vision", "양호")} editing={editing} />
@@ -412,7 +417,7 @@ export default function IntakeFormPage() {
         <table className="w-full border-collapse mb-3">
           <tbody>
             <tr>
-              <th className={`${thL} w-12`} rowSpan={2}>병<br/>력</th>
+              <th className={`${thL} w-8`} rowSpan={2}>병<br/>력</th>
               <th className={`${thL} w-20`}>발병시기</th>
               <td className={`${td}${ec(ed.disease_history)}`} colSpan={3}><Block value={ed.disease_history} onChange={(v) => update("disease_history", v)} editing={editing} rows={3} /></td>
             </tr>
@@ -430,7 +435,7 @@ export default function IntakeFormPage() {
             {DISEASE_CATEGORIES.map((cat, idx) => (
               <tr key={cat.left.name}>
                 {idx === 0 && (
-                  <th className={`${thL} w-12`} rowSpan={DISEASE_CATEGORIES.length + 1}>질<br/>환</th>
+                  <th className={`${thL} w-8`} rowSpan={DISEASE_CATEGORIES.length + 1}>질<br/>환</th>
                 )}
                 <th className={`${thL} w-24`}>{cat.left.name}</th>
                 <td className={`${td}${cat.left.items.some((it) => hasDisease(it)) ? "" : " empty-mark"}`}>
