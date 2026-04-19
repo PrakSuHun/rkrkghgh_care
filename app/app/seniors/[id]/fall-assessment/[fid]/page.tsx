@@ -36,6 +36,9 @@ export default function FallAssessmentPage() {
   const a = data.assessment;
   const name = a.seniors?.name ?? "-";
   const scores: Record<string, number> = a.scores ?? {};
+  // 합계점수 기반 해석 — 서버 응답이 stale 이어도 UI 는 즉시 반영
+  const liveTotal = Object.values(scores).reduce((s: number, v: any) => s + Number(v || 0), 0);
+  const liveInterpretation = liveTotal <= 4 ? "낙상위험 낮음" : liveTotal <= 10 ? "낙상위험 높음" : "낙상위험 아주 높음";
 
   const updateScore = async (key: string, score: number) => {
     const next = { ...scores, [key]: score };
@@ -156,7 +159,7 @@ export default function FallAssessmentPage() {
             ))}
             <tr>
               <td colSpan={5} className="text-center font-medium" style={{ padding: "4px" }}>합계점수</td>
-              <td className="text-center font-bold" style={{ padding: "4px" }}>{a.total}</td>
+              <td className="text-center font-bold" style={{ padding: "4px" }}>{liveTotal}</td>
             </tr>
           </tbody>
         </table>
@@ -168,7 +171,7 @@ export default function FallAssessmentPage() {
                 <p>※ 척도(합계점수 해석)</p>
                 <p>&nbsp;&nbsp;· 4점 이하 : 낙상위험 낮음</p>
                 <p>&nbsp;&nbsp;· 5-10점 : 낙상위험 높음 &nbsp;&nbsp; · <strong>11점 이상 : 낙상위험 아주 높음</strong></p>
-                {a.interpretation && <p className="mt-1 font-bold text-indigo-700 no-print">→ 현재: {a.interpretation}</p>}
+                <p className="mt-1 font-bold text-indigo-700 no-print">→ 현재: {liveInterpretation}</p>
               </td>
             </tr>
             <tr>

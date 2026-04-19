@@ -81,7 +81,8 @@ export default function NewSeniorPage() {
       if (!res.ok) throw new Error(j.error ?? "AI 추출 실패");
       setIntakeId(j.intake.id);
       const data = j.intake.extracted_data ?? {};
-      if (!data.name) data.name = seniorName.trim();
+      // 사용자가 미리 입력한 이름을 항상 우선
+      if (seniorName.trim()) data.name = seniorName.trim();
       setExtracted(data);
     } catch (e: any) {
       setErr(e.message);
@@ -94,7 +95,8 @@ export default function NewSeniorPage() {
     if (result?.intake) {
       setIntakeId(result.intake.id);
       const data = result.intake.extracted_data ?? {};
-      if (!data.name && seniorName.trim()) data.name = seniorName.trim();
+      // 사용자가 미리 입력한 이름을 항상 우선 (AI 인식 이름 덮어씀)
+      if (seniorName.trim()) data.name = seniorName.trim();
       setExtracted(data);
     }
   };
