@@ -35,11 +35,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const seniorName = seniorRow?.name ?? "";
   const recipientName = body.handover_data?.recipient_name ?? seniorName;
   const handoverDate = body.handover_data?.handover_date ?? new Date().toISOString().slice(0, 10);
-  const title = `인수인계서 - ${recipientName || seniorName}`;
+  const monthStr = /^\d{4}-\d{2}/.test(handoverDate) ? handoverDate.slice(0, 7) : new Date().toISOString().slice(0, 7);
+  const title = `인수인계서 - ${recipientName || seniorName || `대상자 ${id}`}`;
   const toWorkerNum = body.handover_data?.to_worker_id ?? body.to_worker_id ?? null;
+  const workerIdForDoc = toWorkerNum && Number.isFinite(Number(toWorkerNum)) ? Number(toWorkerNum) : null;
 
   // 기존 레코드가 있으면 update, 없으면 insert
-  const { data: existing } = await supabase
+  const { data: existing, error: lookupErr } = await supabase
     .from("saved_documents")
     .select("id")
     .eq("doc_type", "senior_handover")
@@ -47,96 +49,96 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (lookupErr) console.error("[handover] saved_documents lookup error", lookupErr);
 
   if (existing?.id) {
-    await supabase
+    const { error: updDocErr } = await supabase
       .from("saved_documents")
       .update({
         title,
-        worker_id: toWorkerNum ? Number(toWorkerNum) : null,
+        worker_id: workerIdForDoc,
         content: body.handover_data,
-        month: handoverDate.slice(0, 7),
+        month: monthStr,
       })
       .eq("id", existing.id);
+    if (updDocErr) console.error("[handover] saved_documents update error", updDocErr);
   } else {
-    await supabase
+    const { error: insDocErr } = await supabase
       .from("saved_documents")
       .insert({
         doc_type: "senior_handover",
         title,
         senior_id: Number(id),
-        worker_id: toWorkerNum ? Number(toWorkerNum) : null,
-        month: handoverDate.slice(0, 7),
+        worker_id: workerIdForDoc,
+        month: monthStr,
         content: body.handover_data,
       });
+    if (insDocErr) console.error("[handover] saved_documents insert error", insDocErr);
   }
 
   // 2) 인계자→인수자 자동 재배정
-  //    - reassign === true 이고 from_worker_id, to_worker_id 가 모두 있고 서로 다를 때만 동작
-  //    - 현재 active 인 caregiver_assignments 중 from_worker_id 와 일치하는 건만 종료
-  //    - 이미 to_worker_id 로 active 배정이 있으면 새로 만들지 않음
+  //    - to_worker_id 가 지정돼 있으면 기존 active 주담당 모두 종료 + 인수자 신규 배정
   let reassignment: any = null;
-  const fromId = body.handover_data.from_worker_id ?? body.from_worker_id ?? null;
-  const toId = body.handover_data.to_worker_id ?? body.to_worker_id ?? null;
-  // to_worker_id 가 지정돼 있으면 무조건 재배정 시도 (명시적 reassign 플래그 없어도)
-  const reassign = body.reassign !== false && toId != null;
+  const toIdRaw = body.handover_data?.to_worker_id ?? body.to_worker_id ?? null;
+  const fromIdRaw = body.handover_data?.from_worker_id ?? body.from_worker_id ?? null;
+  const toId = toIdRaw != null && Number.isFinite(Number(toIdRaw)) ? Number(toIdRaw) : null;
+  const fromId = fromIdRaw != null && Number.isFinite(Number(fromIdRaw)) ? Number(fromIdRaw) : null;
 
-  if (reassign && toId && Number.isFinite(Number(toId))) {
+  if (toId !== null) {
     const today = new Date().toISOString().slice(0, 10);
-    // 기존 active 배정 조회
     const { data: actives, error: actErr } = await supabase
       .from("caregiver_assignments")
       .select("id, caregiver_id, role, status")
-      .eq("senior_id", id)
+      .eq("senior_id", Number(id))
       .eq("status", "active");
-    if (actErr) return NextResponse.json({ error: actErr.message }, { status: 500 });
-
+    if (actErr) {
+      console.error("[handover] caregiver_assignments fetch error", actErr);
+      return NextResponse.json({ error: `배정 조회 실패: ${actErr.message}` }, { status: 500 });
+    }
     const list = actives ?? [];
-    let endedIds: number[] = [];
-    let createdId: number | null = null;
-    let skippedReason: string | null = null;
+    const alreadyAssigned = list.some((a: any) => Number(a.caregiver_id) === toId);
 
-    // 인수자가 이미 active 로 배정돼 있는지 확인
-    const alreadyAssigned = list.some((a: any) => Number(a.caregiver_id) === Number(toId));
-
-    // 종료 대상: from_worker_id 와 일치하는 active 배정만 종료
-    if (fromId && Number.isFinite(Number(fromId))) {
-      const targets = list.filter((a: any) => Number(a.caregiver_id) === Number(fromId));
-      for (const t of targets) {
-        const { error: endErr } = await supabase
-          .from("caregiver_assignments")
-          .update({ status: "ended", end_date: today })
-          .eq("id", t.id);
-        if (endErr) return NextResponse.json({ error: endErr.message }, { status: 500 });
-        endedIds.push(t.id);
+    // 인수자가 아닌 기존 active 배정은 모두 종료 (전임이 다른 사람이어도 전체 정리)
+    const endedIds: number[] = [];
+    for (const a of list) {
+      if (Number(a.caregiver_id) === toId) continue;
+      const { error: endErr } = await supabase
+        .from("caregiver_assignments")
+        .update({ status: "ended", end_date: today })
+        .eq("id", a.id);
+      if (endErr) {
+        console.error("[handover] end assignment error", endErr);
+        return NextResponse.json({ error: `기존 배정 종료 실패: ${endErr.message}` }, { status: 500 });
       }
+      endedIds.push(a.id);
     }
 
+    let createdId: number | null = null;
     if (!alreadyAssigned) {
       const { data: created, error: insErr } = await supabase
         .from("caregiver_assignments")
         .insert({
           senior_id: Number(id),
-          caregiver_id: Number(toId),
+          caregiver_id: toId,
           role: "주담당",
           start_date: today,
           status: "active",
         })
         .select("id")
         .single();
-      if (insErr) return NextResponse.json({ error: insErr.message }, { status: 500 });
+      if (insErr) {
+        console.error("[handover] insert assignment error", insErr);
+        return NextResponse.json({ error: `신규 배정 실패: ${insErr.message}` }, { status: 500 });
+      }
       createdId = created?.id ?? null;
-    } else {
-      skippedReason = "인수자가 이미 활성 배정 상태입니다.";
     }
 
     reassignment = {
       ended_assignment_ids: endedIds,
       created_assignment_id: createdId,
-      from_worker_id: fromId ?? null,
-      to_worker_id: Number(toId),
-      skipped: !!skippedReason,
-      skipped_reason: skippedReason,
+      from_worker_id: fromId,
+      to_worker_id: toId,
+      already_assigned: alreadyAssigned,
       effective_date: today,
     };
   }

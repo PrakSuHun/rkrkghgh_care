@@ -4,7 +4,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import Link from "next/link";
 import { ArrowLeft, Printer, Loader2, Pencil, Save, X, RefreshCw, Wand2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CENTER_INFO } from "@/lib/centerInfo";
 import { buildHandoverAutofill, isHandoverEmpty } from "@/lib/handoverAutofill";
 
@@ -93,6 +93,7 @@ export default function HandoverPage() {
   const [saving, setSaving] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [refining, setRefining] = useState(false);
+  const [autoOpened, setAutoOpened] = useState(false);
 
   const workers: Worker[] = useMemo(
     () => (workersRes?.data ?? workersRes?.caregivers ?? []).map((w: any) => ({ id: w.id, name: w.name, phone: w.phone })),
@@ -175,6 +176,20 @@ export default function HandoverPage() {
       to_worker_id: stored.to_worker_id ?? base.to_worker_id ?? toIdDefault ?? null,
     };
   }, [data, intakeRes, currentPrimary, sp, workersRes]);
+
+  // 최초 진입 시: 저장된 handover_data가 없거나 URL 쿼리로 worker ID가 전달됐으면 자동 편집 모드
+  useEffect(() => {
+    if (autoOpened) return;
+    if (!initial || !data?.senior) return;
+    const stored = data.senior.handover_data ?? {};
+    const hasUrlWorkers = !!(sp.get("from_worker_id") || sp.get("to_worker_id"));
+    const isEmpty = isHandoverEmpty(stored);
+    if (isEmpty || hasUrlWorkers) {
+      setDraft({ ...initial });
+      setEditing(true);
+    }
+    setAutoOpened(true);
+  }, [initial, data?.senior, sp, autoOpened]);
 
   if (!data || !workersRes) return <div className="p-6"><Loader2 className="w-5 h-5 animate-spin" /></div>;
   if (!data.senior) {
@@ -299,13 +314,31 @@ export default function HandoverPage() {
           reassign: willReassign,
         }),
       });
+      const j = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
         throw new Error(j.error ?? "저장 실패");
       }
       setDraft(null);
       setEditing(false);
       mutate();
+      // 대상자 페이지의 SWR 캐시도 갱신
+      try {
+        const { mutate: globalMutate } = await import("swr");
+        globalMutate(`/api/seniors/${seniorId}`);
+        globalMutate("/api/saved-documents");
+      } catch {}
+      if (j.reassignment) {
+        const r = j.reassignment;
+        if (r.created_assignment_id) {
+          alert(`저장 완료. 담당 요양보호사가 새로 배정되었습니다.`);
+        } else if (r.already_assigned) {
+          alert(`저장 완료. 인수자(${draft.to_worker || ""})는 이미 활성 배정 상태입니다.`);
+        } else {
+          alert("저장 완료.");
+        }
+      } else {
+        alert("저장 완료.");
+      }
     } catch (e: any) {
       alert(e.message);
     } finally {
