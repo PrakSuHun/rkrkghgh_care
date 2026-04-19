@@ -13,6 +13,7 @@ type Props = {
   onComplete: (result?: any) => void;
   pathPrefix?: string;
   submitLabel?: string;
+  guide?: React.ReactNode;
 };
 
 const MIME_EXT: Record<string, string> = {
@@ -28,7 +29,7 @@ function extOfMime(mime: string): string {
   return MIME_EXT[base] ?? "webm";
 }
 
-export default function RecordingDialog({ open, onClose, title, uploadUrl, uploadField, entityId, onComplete, pathPrefix, submitLabel }: Props) {
+export default function RecordingDialog({ open, onClose, title, uploadUrl, uploadField, entityId, onComplete, pathPrefix, submitLabel, guide }: Props) {
   const [recording, setRecording] = useState(false);
   const [paused, setPaused] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -374,14 +375,20 @@ export default function RecordingDialog({ open, onClose, title, uploadUrl, uploa
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={tryClose}>
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-5" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-start sm:items-center justify-center p-2 sm:p-4 overflow-y-auto" onClick={tryClose}>
+      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-4 sm:p-5 my-2 max-h-[96vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-3">
           <h3 className="text-lg font-semibold truncate pr-2">{title}</h3>
           <button onClick={tryClose} className="p-2 text-gray-400 active:text-gray-700" aria-label="닫기">
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {guide && (
+          <div className="mb-3 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-gray-700 leading-relaxed max-h-[40vh] overflow-y-auto">
+            {guide}
+          </div>
+        )}
 
         {errorMsg && (
           <div className="mb-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3 break-words">

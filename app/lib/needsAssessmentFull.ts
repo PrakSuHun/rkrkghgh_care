@@ -172,6 +172,12 @@ ${SCHEMA}
 - section10_summary의 health/function/cognition/care_plan_direction: 각 **5문장 이내, 250자 이내**
 - 넘치면 인쇄 시 잘림. 핵심만 뽑아 간결하게.
 
+※ 판단 근거 작성 규칙 (반드시 준수):
+- **모든 섹션의 "opinion" 필드**는 반드시 **"보호자 면담을 통해"** 로 시작해서 해당 내용을 알게 되었다는 점을 명시한다.
+- 예시: "보호자 면담을 통해 어르신이 보행 시 도움이 필요하다는 사실을 파악함."
+- 예시: "보호자 면담을 통해 최근 식사량이 줄었다는 점이 확인됨."
+- section10_summary 네 개 필드도 동일하게 "보호자 면담을 통해" 로 시작.
+
 JSON만 출력.`;
 
   const res = await model.generateContent(prompt);
