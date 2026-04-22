@@ -123,6 +123,24 @@ export async function POST(req: Request) {
         .from("counseling_logs")
         .update({ transcript, summary, status: "done" })
         .eq("id", logId);
+      // saved_documents 에도 등록 — 요양사 상세 리스트 클릭/서류 탭 노출용
+      const name = thisWorker?.name ?? "";
+      const date = new Date().toISOString().slice(0, 10);
+      await supabase.from("saved_documents").insert({
+        doc_type: "counseling",
+        title: `${name} · ${date}`,
+        worker_id: workerId,
+        content: {
+          counselor: "박현식",
+          method: "녹음",
+          date,
+          worker_name: name,
+          summary,
+          action: "해당 없음",
+          prev_result: "해당 없음",
+          counseling_log_id: logId,
+        },
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error("Transcription failed:", msg);
