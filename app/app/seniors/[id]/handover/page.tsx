@@ -150,12 +150,15 @@ export default function HandoverPage() {
     const toIdDefault = qToIdNum ?? null;
     const toNameDefault = qToName || "";
 
+    // 대상자 마스터 정보는 항상 seniors 테이블의 최신 값을 우선 (stored 스냅샷 덮어씀)
+    // — 사용자가 어르신 정보 수정 후 인수인계서 열었을 때 옛값이 고정되지 않도록
+    const safeStr = (v: any) => (typeof v === "string" ? v : v == null ? "" : String(v));
     return {
-      recipient_name: pick("recipient_name", senior.name ?? ""),
-      birth_date: pick("birth_date", senior.birth_date ?? ""),
-      phone: pick("phone", senior.phone ?? ""),
-      guardian_name: pick("guardian_name", senior.guardian_name ?? ""),
-      address: pick("address", senior.address ?? ""),
+      recipient_name: safeStr(senior.name) || safeStr(stored.recipient_name),
+      birth_date: safeStr(senior.birth_date) || safeStr(stored.birth_date),
+      phone: safeStr(senior.phone) || safeStr(stored.phone),
+      guardian_name: safeStr(senior.guardian_name) || safeStr(stored.guardian_name),
+      address: safeStr(senior.address) || safeStr(stored.address),
       service_body: stored.service_body ?? base.service_body ?? [],
       service_housework: stored.service_housework ?? base.service_housework ?? [],
       service_emotion: stored.service_emotion ?? base.service_emotion ?? [],
@@ -288,9 +291,15 @@ export default function HandoverPage() {
     if (!draft) return;
     setSaving(true);
     try {
-      // 재배정 여부: 인수자(to)가 지정돼 있고, 현재 활성 주담당과 다를 때
+      // 인계자·인수자 검증: 동일인이면 진행 불가
       const toId = draft.to_worker_id ?? null;
       const fromId = draft.from_worker_id ?? null;
+      if (toId && fromId && Number(toId) === Number(fromId)) {
+        alert("인계자와 인수자가 동일한 요양보호사입니다. 서로 다른 분을 선택해주세요.");
+        setSaving(false);
+        return;
+      }
+      // 재배정 여부: 인수자(to)가 지정돼 있고, 현재 활성 주담당과 다를 때
       const willReassign = !!toId && Number(toId) !== Number(fromId ?? -1);
       let confirmed = true;
       if (willReassign) {

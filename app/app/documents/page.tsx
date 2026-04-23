@@ -2,8 +2,11 @@
 
 import useSWR from "swr";
 import Link from "next/link";
-import { FileText, Loader2, Trash2, MessageSquare } from "lucide-react";
+import { FileText, Loader2, Trash2, MessageSquare, Search, X } from "lucide-react";
 import { invalidate } from "@/lib/swr";
+import { useMemo, useState } from "react";
+
+const VISIBLE_LIMIT = 15;
 
 const SENIOR_DOCS = [
   { v: "needs_assessment", label: "욕구사정지" },
@@ -30,8 +33,29 @@ type SavedDoc = {
 };
 
 export default function DocumentsPage() {
-  const { data: docsRes, isLoading: docsLoading } = useSWR<{ documents: SavedDoc[] }>("/api/saved-documents");
+  const { data: docsRes, isLoading: docsLoading } = useSWR<{ documents: SavedDoc[] }>("/api/saved-documents?limit=500");
   const docs = docsRes?.documents ?? [];
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return docs;
+    return docs.filter((d) => {
+      const parts = [
+        d.title ?? "",
+        DOC_TYPE_LABEL[d.doc_type] ?? d.doc_type,
+        d.seniors?.name ?? "",
+        d.caregivers?.name ?? "",
+        new Date(d.created_at).toLocaleDateString("ko-KR"),
+        (d.created_at ?? "").slice(0, 10),
+      ];
+      return parts.join(" ").toLowerCase().includes(q);
+    });
+  }, [docs, query]);
+
+  const searching = query.trim().length > 0;
+  const visible = searching ? filtered : filtered.slice(0, VISIBLE_LIMIT);
+  const hiddenCount = searching ? 0 : Math.max(0, filtered.length - VISIBLE_LIMIT);
 
   const deleteDoc = async (id: number) => {
     if (!confirm("이 서류를 삭제할까요?")) return;
@@ -86,34 +110,70 @@ export default function DocumentsPage() {
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold text-gray-700 mb-2">저장된 서류</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-semibold text-gray-700">저장된 서류</h2>
+          <span className="text-xs text-gray-500">
+            {searching ? `${filtered.length}건 검색됨` : `총 ${docs.length}건${hiddenCount > 0 ? ` · 최근 ${VISIBLE_LIMIT}건 표시` : ""}`}
+          </span>
+        </div>
+
+        <div className="relative mb-3">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input
+            type="search"
+            inputMode="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="서류 제목·유형·대상자·요양사·날짜로 검색"
+            className="w-full pl-9 pr-9 py-2.5 border rounded-lg text-sm"
+          />
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 active:text-gray-700"
+              aria-label="검색 지우기"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
         {docsLoading ? (
           <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
         ) : docs.length === 0 ? (
           <p className="text-center text-sm text-gray-400 py-6">저장된 서류가 없습니다</p>
+        ) : visible.length === 0 ? (
+          <p className="text-center text-sm text-gray-400 py-6">검색 결과가 없습니다</p>
         ) : (
-          <div className="space-y-2">
-            {docs.map((d) => (
-              <Link key={d.id} href={docLink(d)}>
-                <div className="bg-white border rounded-xl p-3 flex items-start gap-3 active:bg-gray-50">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      <span className="text-xs text-indigo-600 mr-1">{DOC_TYPE_LABEL[d.doc_type] ?? d.doc_type}</span>
-                      {d.title}
-                    </p>
-                    <p className="text-xs text-gray-500 truncate">
-                      {new Date(d.created_at).toLocaleDateString("ko-KR")}
-                      {d.seniors?.name && ` · ${d.seniors.name}`}
-                      {d.caregivers?.name && ` · ${d.caregivers.name}`}
-                    </p>
+          <>
+            <div className="space-y-2">
+              {visible.map((d) => (
+                <Link key={d.id} href={docLink(d)}>
+                  <div className="bg-white border rounded-xl p-3 flex items-start gap-3 active:bg-gray-50">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        <span className="text-xs text-indigo-600 mr-1">{DOC_TYPE_LABEL[d.doc_type] ?? d.doc_type}</span>
+                        {d.title}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {new Date(d.created_at).toLocaleDateString("ko-KR")}
+                        {d.seniors?.name && ` · ${d.seniors.name}`}
+                        {d.caregivers?.name && ` · ${d.caregivers.name}`}
+                      </p>
+                    </div>
+                    <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteDoc(d.id); }} className="p-2 text-red-500 active:bg-red-50 rounded-lg shrink-0">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteDoc(d.id); }} className="p-2 text-red-500 active:bg-red-50 rounded-lg shrink-0">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </Link>
-            ))}
-          </div>
+                </Link>
+              ))}
+            </div>
+            {!searching && hiddenCount > 0 && (
+              <p className="text-center text-xs text-gray-500 mt-3 py-2 border-t">
+                {hiddenCount}건이 숨겨져 있습니다 — 위 검색창으로 찾아보세요
+              </p>
+            )}
+          </>
         )}
       </section>
     </div>

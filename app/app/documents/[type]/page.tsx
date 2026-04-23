@@ -1,10 +1,75 @@
 "use client";
 
-import { useState, useLayoutEffect, useRef } from "react";
+import { useState, useLayoutEffect, useRef, useMemo, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import Link from "next/link";
-import { ArrowLeft, Printer, Copy, Check, Loader2, Wand2, RefreshCw } from "lucide-react";
+import { ArrowLeft, Printer, Copy, Check, Loader2, Wand2, RefreshCw, Search, X } from "lucide-react";
+
+type Opt = { id: number | string; label: string };
+
+function SearchCombo({ value, onChange, options, placeholder }: { value: string; onChange: (v: string) => void; options: Opt[]; placeholder?: string }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  const selected = options.find((o) => String(o.id) === String(value));
+  const input = open ? query : (selected?.label ?? "");
+
+  const filtered = useMemo(() => {
+    const q = (open ? query : "").trim().toLowerCase();
+    if (!q) return options.slice(0, 100);
+    return options.filter((o) => o.label.toLowerCase().includes(q)).slice(0, 100);
+  }, [query, options, open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <div className="relative">
+        <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        <input
+          type="text"
+          value={input}
+          onFocus={() => { setOpen(true); setQuery(""); }}
+          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+          placeholder={placeholder ?? "이름 검색"}
+          className="w-full pl-8 pr-7 py-2 border rounded-lg text-sm bg-white"
+        />
+        {value && !open && (
+          <button type="button" onClick={(e) => { e.stopPropagation(); onChange(""); setQuery(""); }} className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 text-gray-400 active:text-gray-700">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+      {open && filtered.length > 0 && (
+        <div className="absolute z-30 mt-1 w-full max-h-60 overflow-y-auto bg-white border rounded-lg shadow-lg">
+          {filtered.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); onChange(String(o.id)); setOpen(false); setQuery(""); }}
+              className={`w-full text-left px-3 py-2 text-sm active:bg-gray-100 ${String(value) === String(o.id) ? "bg-indigo-50 text-indigo-700" : ""}`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {open && filtered.length === 0 && (
+        <div className="absolute z-30 mt-1 w-full bg-white border rounded-lg shadow-lg px-3 py-2 text-sm text-gray-400">
+          결과 없음
+        </div>
+      )}
+    </div>
+  );
+}
 
 type DocSection = { label: string; text: string; type?: "text" | "table"; rows?: string[][]; headers?: string[] };
 type DocOutput = { title: string; subtitle?: string; meta: DocSection[]; sections: DocSection[]; signature?: boolean };
@@ -78,6 +143,10 @@ export default function DocTypePage() {
       return;
     }
     if (type === "senior_handover" && seniorId) {
+      if (fromWorkerId && toWorkerId && Number(fromWorkerId) === Number(toWorkerId)) {
+        setErr("전임 요양사와 후임 요양사가 동일합니다. 서로 다른 분을 선택해주세요.");
+        return;
+      }
       const params = new URLSearchParams({ from: "documents" });
       if (fromWorkerId) params.set("from_worker_id", fromWorkerId);
       if (toWorkerId) params.set("to_worker_id", toWorkerId);
@@ -183,20 +252,24 @@ export default function DocTypePage() {
           <div className="grid sm:grid-cols-2 gap-3">
             {meta.needSenior && (
               <div>
-                <label className="text-xs text-gray-500">어르신</label>
-                <select value={seniorId} onChange={(e) => setSeniorId(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm mt-1">
-                  <option value="">선택</option>
-                  {seniors.map((s: any) => <option key={s.id} value={s.id}>{s.name} · {s.grade ?? "등급-"}</option>)}
-                </select>
+                <label className="text-xs text-gray-500 mb-1 block">어르신</label>
+                <SearchCombo
+                  value={seniorId}
+                  onChange={setSeniorId}
+                  options={seniors.map((s: any) => ({ id: s.id, label: `${s.name}${s.grade ? ` · ${s.grade}` : ""}` }))}
+                  placeholder="어르신 이름 검색"
+                />
               </div>
             )}
             {meta.needWorker && (
               <div>
-                <label className="text-xs text-gray-500">요양보호사</label>
-                <select value={workerId} onChange={(e) => setWorkerId(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm mt-1">
-                  <option value="">선택</option>
-                  {workers.map((w: any) => <option key={w.id} value={w.id}>{w.name}</option>)}
-                </select>
+                <label className="text-xs text-gray-500 mb-1 block">요양보호사</label>
+                <SearchCombo
+                  value={workerId}
+                  onChange={setWorkerId}
+                  options={workers.map((w: any) => ({ id: w.id, label: w.name }))}
+                  placeholder="요양보호사 이름 검색"
+                />
               </div>
             )}
             {meta.needMonth && (
@@ -218,18 +291,22 @@ export default function DocTypePage() {
             {meta.needFromTo && (
               <>
                 <div>
-                  <label className="text-xs text-gray-500">전임 요양사 (선택)</label>
-                  <select value={fromWorkerId} onChange={(e) => setFromWorkerId(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm mt-1">
-                    <option value="">선택 안 함</option>
-                    {workers.map((w: any) => <option key={w.id} value={w.id}>{w.name}</option>)}
-                  </select>
+                  <label className="text-xs text-gray-500 mb-1 block">전임 요양사 (선택)</label>
+                  <SearchCombo
+                    value={fromWorkerId}
+                    onChange={setFromWorkerId}
+                    options={workers.map((w: any) => ({ id: w.id, label: w.name }))}
+                    placeholder="전임 요양사 검색"
+                  />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500">후임 요양사 (선택)</label>
-                  <select value={toWorkerId} onChange={(e) => setToWorkerId(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm mt-1">
-                    <option value="">선택 안 함</option>
-                    {workers.map((w: any) => <option key={w.id} value={w.id}>{w.name}</option>)}
-                  </select>
+                  <label className="text-xs text-gray-500 mb-1 block">후임 요양사 (선택)</label>
+                  <SearchCombo
+                    value={toWorkerId}
+                    onChange={setToWorkerId}
+                    options={workers.map((w: any) => ({ id: w.id, label: w.name }))}
+                    placeholder="후임 요양사 검색"
+                  />
                 </div>
               </>
             )}

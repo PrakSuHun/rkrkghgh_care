@@ -3,7 +3,7 @@
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import Link from "next/link";
-import { ArrowLeft, Printer, RefreshCw, Trash2, Loader2, Wand2 } from "lucide-react";
+import { ArrowLeft, Printer, RefreshCw, Trash2, Loader2, Wand2, Pencil, Save, X } from "lucide-react";
 import { useState } from "react";
 import { invalidate } from "@/lib/swr";
 import { CENTER_INFO } from "@/lib/centerInfo";
@@ -30,37 +30,58 @@ export default function FallAssessmentPage() {
   const [notesDraft, setNotesDraft] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState("");
   const [refining, setRefining] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [scoreDraft, setScoreDraft] = useState<Record<string, number> | null>(null);
+  const [saving, setSaving] = useState(false);
 
   if (isLoading) return <div className="p-6"><Loader2 className="w-5 h-5 animate-spin" /></div>;
   if (!data?.assessment) return <div className="p-6">평가지를 찾을 수 없습니다.</div>;
   const a = data.assessment;
   const name = a.seniors?.name ?? "-";
-  const scores: Record<string, number> = a.scores ?? {};
+  const serverScores: Record<string, number> = a.scores ?? {};
+  const scores: Record<string, number> = editing ? (scoreDraft ?? serverScores) : serverScores;
   // 합계점수 기반 해석 — 서버 응답이 stale 이어도 UI 는 즉시 반영
   const liveTotal = Object.values(scores).reduce((s: number, v: any) => s + Number(v || 0), 0);
   const liveInterpretation = liveTotal <= 4 ? "낙상위험 낮음" : liveTotal <= 10 ? "낙상위험 높음" : "낙상위험 아주 높음";
 
-  const updateScore = async (key: string, score: number) => {
-    const next = { ...scores, [key]: score };
-    await fetch(`/api/fall-assessments/${fid}`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scores: next }),
-    });
-    mutate();
-    invalidate("/api/fall-assessments");
+  const updateScore = (key: string, score: number) => {
+    if (!editing) return;
+    setScoreDraft((prev) => ({ ...((prev ?? serverScores) ?? {}), [key]: score }));
   };
 
-  const saveNotes = async () => {
-    if (notesDraft === null) return;
-    setSavingNotes(true);
-    await fetch(`/api/fall-assessments/${fid}`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notes: notesDraft }),
-    });
-    mutate();
-    invalidate("/api/fall-assessments");
+  const startEdit = () => {
+    setScoreDraft({ ...serverScores });
+    setNotesDraft(a.notes ?? "");
+    setEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setScoreDraft(null);
     setNotesDraft(null);
-    setSavingNotes(false);
+    setEditing(false);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const patch: any = {};
+      if (scoreDraft) patch.scores = scoreDraft;
+      if (notesDraft !== null) patch.notes = notesDraft;
+      const res = await fetch(`/api/fall-assessments/${fid}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (!res.ok) throw new Error("저장 실패");
+      setScoreDraft(null);
+      setNotesDraft(null);
+      setEditing(false);
+      mutate();
+      invalidate("/api/fall-assessments");
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const regen = async () => {
@@ -99,13 +120,29 @@ export default function FallAssessmentPage() {
           <ArrowLeft className="w-4 h-4 mr-1" /> {backLabel}
         </Link>
         <div className="flex gap-2">
-          <button onClick={regen} disabled={regenerating} className="min-h-[40px] px-3 py-2 bg-gray-100 active:bg-gray-300 rounded-lg text-sm inline-flex items-center gap-1 disabled:opacity-50">
-            <RefreshCw className={`w-4 h-4 ${regenerating ? "animate-spin" : ""}`} /> 재평가
-          </button>
-          <button onClick={del} className="min-h-[40px] p-2 text-red-500 active:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
-          <button onClick={() => window.print()} className="min-h-[40px] px-3 py-2 bg-indigo-600 active:bg-indigo-800 text-white rounded-lg text-sm inline-flex items-center gap-1">
-            <Printer className="w-4 h-4" /> 인쇄
-          </button>
+          {editing ? (
+            <>
+              <button onClick={cancelEdit} disabled={saving} className="min-h-[40px] px-3 py-2 bg-gray-100 active:bg-gray-300 rounded-lg text-sm inline-flex items-center gap-1 disabled:opacity-50">
+                <X className="w-4 h-4" /> 취소
+              </button>
+              <button onClick={save} disabled={saving} className="min-h-[40px] px-3 py-2 bg-green-600 text-white active:bg-green-800 rounded-lg text-sm inline-flex items-center gap-1 disabled:opacity-50">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} 저장
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={startEdit} className="min-h-[40px] px-3 py-2 bg-gray-100 active:bg-gray-300 rounded-lg text-sm inline-flex items-center gap-1">
+                <Pencil className="w-4 h-4" /> 편집
+              </button>
+              <button onClick={regen} disabled={regenerating} className="min-h-[40px] px-3 py-2 bg-gray-100 active:bg-gray-300 rounded-lg text-sm inline-flex items-center gap-1 disabled:opacity-50">
+                <RefreshCw className={`w-4 h-4 ${regenerating ? "animate-spin" : ""}`} /> 재평가
+              </button>
+              <button onClick={del} className="min-h-[40px] p-2 text-red-500 active:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+              <button onClick={() => window.print()} className="min-h-[40px] px-3 py-2 bg-indigo-600 active:bg-indigo-800 text-white rounded-lg text-sm inline-flex items-center gap-1">
+                <Printer className="w-4 h-4" /> 인쇄
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -141,16 +178,16 @@ export default function FallAssessmentPage() {
                 {it.opts.map((opt) => (
                   <td
                     key={opt.score}
-                    onClick={() => opt.text && updateScore(it.key, opt.score)}
-                    className={`whitespace-pre-wrap ${opt.text ? "cursor-pointer" : ""} ${scores[it.key] === opt.score ? "bg-yellow-200" : ""}`}
+                    onClick={() => editing && opt.text && updateScore(it.key, opt.score)}
+                    className={`whitespace-pre-wrap ${editing && opt.text ? "cursor-pointer" : ""} ${scores[it.key] === opt.score ? "bg-yellow-200" : ""}`}
                     style={{ padding: "6px 4px", minHeight: 50 }}
                   >
                     {opt.text}
                   </td>
                 ))}
                 <td
-                  onClick={() => updateScore(it.key, 0)}
-                  className={`text-center font-bold cursor-pointer ${scores[it.key] === 0 ? "bg-yellow-200" : ""}`}
+                  onClick={() => editing && updateScore(it.key, 0)}
+                  className={`text-center font-bold ${editing ? "cursor-pointer" : ""} ${scores[it.key] === 0 ? "bg-yellow-200" : ""}`}
                   style={{ padding: "6px 4px" }}
                 >
                   {scores[it.key] ?? 0}
@@ -179,12 +216,11 @@ export default function FallAssessmentPage() {
                 <textarea
                   className="nf-edit-text"
                   rows={3}
-                  value={notesDraft ?? a.notes ?? ""}
-                  onChange={(e) => setNotesDraft(e.target.value)}
-                  onBlur={saveNotes}
+                  value={editing ? (notesDraft ?? "") : (a.notes ?? "")}
+                  onChange={(e) => editing && setNotesDraft(e.target.value)}
+                  readOnly={!editing}
                   placeholder="특이사항 입력"
                 />
-                {savingNotes && <p className="text-xs text-gray-400">저장 중...</p>}
               </td>
             </tr>
           </tbody>

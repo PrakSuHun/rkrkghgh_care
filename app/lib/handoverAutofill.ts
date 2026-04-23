@@ -32,9 +32,16 @@ export type HandoverData = {
   to_worker_id: number | null;
 };
 
+// 원시값만 문자열화 — 객체 들어오면 빈 문자열 (과거 [object Object] 버그 방지)
 const norm = (v: any): string => {
   if (v == null) return "";
-  if (Array.isArray(v)) return v.filter(Boolean).join(", ");
+  if (Array.isArray(v)) {
+    return v
+      .map((x) => (x == null ? "" : typeof x === "object" ? "" : String(x).trim()))
+      .filter(Boolean)
+      .join(", ");
+  }
+  if (typeof v === "object") return "";
   return String(v).trim();
 };
 
@@ -250,25 +257,58 @@ function parseMedicationCount(medications: string): string {
 
 function buildLifeEnvironment(senior: any, intake: any, full: any): string {
   const parts: string[] = [];
+
+  // 1) 동거 상황
   if (intake?.cohabit_type || intake?.cohabit) {
     const t = norm(intake.cohabit_type);
     const c = norm(intake.cohabit);
     const v = [t, c].filter(Boolean).join(" ");
-    if (v) parts.push(`동거 ${v}`);
+    if (v) parts.push(`동거: ${v}`);
   }
+
+  // 2) 주거 환경 (욕구사정 + 어르신 환경 필드)
+  const envItems: string[] = [];
   if (full?.section8_environment) {
     const e = full.section8_environment;
-    const env: string[] = [];
-    if (e.floor) env.push(String(e.floor));
-    if (e.elevator) env.push("엘리베이터");
-    if (e.stairs) env.push("계단");
-    if (e.thresholds) env.push("문턱");
-    if (e.toilet_location) env.push(`화장실 ${e.toilet_location}`);
-    if (env.length) parts.push(env.join(", "));
+    if (e.floor) envItems.push(String(e.floor));
+    if (e.elevator) envItems.push("엘리베이터 있음");
+    if (e.stairs) envItems.push("계단 있음");
+    if (e.thresholds) envItems.push("문턱 있음");
+    if (e.toilet_location) envItems.push(`화장실 ${e.toilet_location}`);
+    if (e.hot_water === false) envItems.push("온수 없음");
+    if (e.shower === false) envItems.push("샤워시설 없음");
+    const eOpinion = norm(e.opinion);
+    if (eOpinion) envItems.push(eOpinion);
   }
-  const summary = summarize(intake?.counselor_opinion, 80);
-  if (summary) parts.push(summary);
-  return parts.filter(Boolean).join(" / ");
+  if (senior?.environment && typeof senior.environment === "object") {
+    const se = senior.environment;
+    if (se.floor && !envItems.some((x) => x.includes(String(se.floor)))) envItems.push(String(se.floor));
+    if (se.has_elevator) envItems.push("엘리베이터");
+    if (se.has_stairs) envItems.push("계단");
+    if (se.has_thresholds) envItems.push("문턱");
+    if (se.has_handrail) envItems.push("손잡이 설치");
+  }
+  if (envItems.length) parts.push(`주거: ${envItems.join(", ")}`);
+
+  // 3) 요양욕구 / 특이사항 — 상담자 의견 + 개별욕구 (더 길게 허용)
+  const opinion = summarize(intake?.counselor_opinion, 180);
+  if (opinion) parts.push(opinion);
+  const needs = summarize(intake?.individual_needs, 120);
+  if (needs && !parts.some((p) => p.includes(needs))) parts.push(`개별욕구: ${needs}`);
+
+  // 4) 종합의견(생활기능) 에서 핵심 문장
+  if (full?.section10_summary?.function) {
+    const s = summarize(full.section10_summary.function, 150);
+    if (s && !parts.some((p) => p.includes(s))) parts.push(s);
+  }
+
+  // 5) seniors 테이블에 별도 nursing_needs 필드가 있으면 활용
+  if (senior?.nursing_needs) {
+    const s = summarize(typeof senior.nursing_needs === "string" ? senior.nursing_needs : "", 120);
+    if (s && !parts.some((p) => p.includes(s))) parts.push(`요양욕구: ${s}`);
+  }
+
+  return parts.filter(Boolean).join(" · ");
 }
 
 function buildServiceNote(intake: any, senior: any): string {

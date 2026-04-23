@@ -4,7 +4,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR, { mutate as globalMutate } from "swr";
 import Link from "next/link";
-import { ArrowLeft, Printer, RefreshCw, Loader2, Save, Wand2 } from "lucide-react";
+import { ArrowLeft, Printer, RefreshCw, Loader2, Save, Wand2, Pencil, X } from "lucide-react";
 
 type Dict = Record<string, any>;
 
@@ -73,6 +73,8 @@ export default function NeedsAssessmentFullPage() {
   const [generating, setGenerating] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [refining, setRefining] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [backup, setBackup] = useState<Dict | null>(null);
 
   useEffect(() => {
     if (seniorRes?.senior?.needs_assessment_full) {
@@ -129,7 +131,7 @@ export default function NeedsAssessmentFullPage() {
   }, [full]);
 
   const update = (path: string[], value: any) => {
-    if (!full) return;
+    if (!editing || !full) return;
     const next = structuredClone(full);
     let ref: any = next;
     for (let i = 0; i < path.length - 1; i++) {
@@ -142,14 +144,14 @@ export default function NeedsAssessmentFullPage() {
   };
 
   const updateToggle = (path: string[], value: any) => {
-    if (!full) return;
+    if (!editing || !full) return;
     let cur: any = full;
     for (const p of path) cur = cur?.[p];
     update(path, cur === value ? null : value);
   };
 
   const toggleInArray = (path: string[], item: string) => {
-    if (!full) return;
+    if (!editing || !full) return;
     const next = structuredClone(full);
     let ref: any = next;
     for (let i = 0; i < path.length - 1; i++) ref = ref[path[i]] ?? (ref[path[i]] = {});
@@ -162,6 +164,20 @@ export default function NeedsAssessmentFullPage() {
     setDirty(true);
   };
 
+  const startEdit = () => {
+    if (!full) return;
+    setBackup(structuredClone(full));
+    setEditing(true);
+    setDirty(false);
+  };
+
+  const cancelEdit = () => {
+    if (backup) setFull(backup);
+    setBackup(null);
+    setEditing(false);
+    setDirty(false);
+  };
+
   const save = async () => {
     if (!full) return;
     setSaving(true);
@@ -172,6 +188,8 @@ export default function NeedsAssessmentFullPage() {
       });
       if (!res.ok) throw new Error("저장 실패");
       setDirty(false);
+      setEditing(false);
+      setBackup(null);
       globalMutate(`/api/seniors/${id}`);
     } catch (e: any) {
       alert(e.message);
@@ -222,16 +240,29 @@ export default function NeedsAssessmentFullPage() {
           <ArrowLeft className="w-4 h-4 mr-1" /> {backLabel}
         </Link>
         <div className="flex gap-2 items-center">
-          {dirty && <span className="text-xs text-amber-600">변경사항 있음</span>}
-          <button onClick={save} disabled={saving || !dirty} className="min-h-[40px] px-3 py-2 bg-green-600 text-white active:bg-green-800 rounded-lg text-sm inline-flex items-center gap-1 disabled:opacity-50">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} 저장
-          </button>
-          <button onClick={generate} disabled={generating} className="min-h-[40px] px-3 py-2 bg-gray-100 active:bg-gray-300 rounded-lg text-sm inline-flex items-center gap-1 disabled:opacity-50">
-            <RefreshCw className={`w-4 h-4 ${generating ? "animate-spin" : ""}`} /> 재생성
-          </button>
-          <button onClick={() => window.print()} className="min-h-[40px] px-3 py-2 bg-indigo-600 active:bg-indigo-800 text-white rounded-lg text-sm inline-flex items-center gap-1">
-            <Printer className="w-4 h-4" /> 인쇄
-          </button>
+          {editing ? (
+            <>
+              {dirty && <span className="text-xs text-amber-600">변경사항 있음</span>}
+              <button onClick={cancelEdit} disabled={saving} className="min-h-[40px] px-3 py-2 bg-gray-100 active:bg-gray-300 rounded-lg text-sm inline-flex items-center gap-1 disabled:opacity-50">
+                <X className="w-4 h-4" /> 취소
+              </button>
+              <button onClick={save} disabled={saving} className="min-h-[40px] px-3 py-2 bg-green-600 text-white active:bg-green-800 rounded-lg text-sm inline-flex items-center gap-1 disabled:opacity-50">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} 저장
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={startEdit} className="min-h-[40px] px-3 py-2 bg-gray-100 active:bg-gray-300 rounded-lg text-sm inline-flex items-center gap-1">
+                <Pencil className="w-4 h-4" /> 편집
+              </button>
+              <button onClick={generate} disabled={generating} className="min-h-[40px] px-3 py-2 bg-gray-100 active:bg-gray-300 rounded-lg text-sm inline-flex items-center gap-1 disabled:opacity-50">
+                <RefreshCw className={`w-4 h-4 ${generating ? "animate-spin" : ""}`} /> 재생성
+              </button>
+              <button onClick={() => window.print()} className="min-h-[40px] px-3 py-2 bg-indigo-600 active:bg-indigo-800 text-white rounded-lg text-sm inline-flex items-center gap-1">
+                <Printer className="w-4 h-4" /> 인쇄
+              </button>
+            </>
+          )}
         </div>
       </div>
 

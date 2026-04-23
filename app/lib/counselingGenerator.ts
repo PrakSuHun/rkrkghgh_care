@@ -12,8 +12,8 @@ export async function generateCounselingBatch(opts: {
   date: string;
   method?: string;
   counselor?: string;
-  workers: Array<{ id: number; name: string; seniors?: Array<{ name: string; grade: string | null; summary: string | null }> }>;
-  previousLogs?: Array<{ worker_name: string; summary: string; action: string; created_at: string }>;
+  workers: Array<{ id: number; name: string; seniors?: Array<{ name: string; grade: string | null; summary: string | null }>; no_senior?: boolean }>;
+  previousLogs?: Array<{ worker_name: string; senior_name?: string | null; summary: string; action: string; created_at: string }>;
 }): Promise<Array<{ workerId: number; workerName: string; summary: string; action: string; prevResult: string }>> {
   const model = getClient().getGenerativeModel({
     model: "gemini-2.5-flash",
@@ -21,7 +21,10 @@ export async function generateCounselingBatch(opts: {
   });
 
   const prevText = (opts.previousLogs ?? []).length > 0
-    ? `\n[이전 상담 내역]\n${opts.previousLogs!.map((l) => `- ${l.worker_name} (${l.created_at}): 상담내용: ${l.summary} / 조치사항: ${l.action || "없음"}`).join("\n")}`
+    ? `\n[이전 상담 내역]\n${opts.previousLogs!.map((l) => {
+        const tag = l.senior_name ? `[${l.senior_name}]` : "[일반상담]";
+        return `- ${l.worker_name} ${tag} (${l.created_at}): 상담내용: ${l.summary} / 조치사항: ${l.action || "없음"}`;
+      }).join("\n")}`
     : "\n(이전 상담 내역 없음)";
 
   const prompt = `${NO_HALLUCINATION_RULES}
@@ -45,6 +48,9 @@ ${prevText}
 요양보호사별 담당 대상자 참고 (※ 사실 검증용 — 담당하지 않는 어르신 얘기를 지어내지 말 것):
 ${opts.workers.map((w) => {
   const srs = (w.seniors ?? []).map((s) => `  · ${s.name} (${s.grade ?? "등급-"})`).join("\n");
+  if (w.no_senior) {
+    return `- ${w.name} (id: ${w.id}) — **특정 어르신과 무관한 일반 상담** (교육·근무태도·컨디션·휴가 등 요양사 본인 중심으로 작성. 어르신 얘기 꺼내지 말 것)`;
+  }
   return `- ${w.name} (id: ${w.id})\n${srs || "  (담당 대상자 없음 — 어르신 언급 금지)"}`;
 }).join("\n\n")}
 
