@@ -1,6 +1,7 @@
 {
   "regions": ["icn1"],
   "crons": [
-    { "path": "/api/cron/cleanup-audio", "schedule": "0 18 * * *" }
+    { "path": "/api/cron/cleanup-audio", "schedule": "0 18 * * *" },
+    { "path": "/api/cron/keep-alive", "schedule": "0 0 * * *" }
   ]
 }
