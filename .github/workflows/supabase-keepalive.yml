@@ -1,0 +1,55 @@
+name: Supabase keep-alive
+
+# Supabase 무료 플랜은 7일간 DB 요청이 없으면 프로젝트를 자동 일시정지시킨다.
+# 이 워크플로는 매일 Supabase REST 에 가벼운 count 요청을 한 번 날려
+# 유휴 타이머를 리셋 → 자동 pause 를 막는다.
+#
+# Vercel 배포 파이프라인과 완전히 무관하게 동작한다.
+# (Vercel 배포가 BLOCKED 여도 이 keep-alive 는 계속 돈다.)
+#
+# 필요한 저장소 Secret:
+#   SUPABASE_URL               예) https://ohfdprfpreehokxzigis.supabase.co
+#   SUPABASE_SERVICE_ROLE_KEY  service_role 키 (RLS 우회 → 항상 200)
+#
+# 참고: GitHub 는 저장소가 60일간 커밋이 없으면 예약 워크플로를 자동 비활성화한다.
+#       그 경우 Actions 탭에서 "Enable workflow" 한 번 누르면 다시 켜진다.
+
+on:
+  schedule:
+    # 매일 00:15 UTC (09:15 KST). 정각을 피해 살짝 늦춰 실행 지연/누락 확률을 낮춤.
+    - cron: "15 0 * * *"
+  workflow_dispatch: {} # Actions 탭에서 수동 실행도 가능
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping Supabase (seniors count)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo "::error::SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY secret 이 설정되지 않았습니다."
+            exit 1
+          fi
+
+          # 행을 읽지 않고 카운트 헤더만 요청하는 가장 가벼운 형태의 실제 DB 요청.
+          # HTTP 코드와 Content-Range(총 개수) 를 함께 확인한다.
+          http_code=$(curl -sS -o /tmp/body -w "%{http_code}" \
+            "${SUPABASE_URL}/rest/v1/seniors?select=id" \
+            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Range-Unit: items" \
+            -H "Range: 0-0" \
+            -H "Prefer: count=exact")
+
+          echo "HTTP ${http_code}"
+          if [ "${http_code}" -lt 200 ] || [ "${http_code}" -ge 400 ]; then
+            echo "::error::Supabase keep-alive 요청 실패 (HTTP ${http_code})"
+            cat /tmp/body || true
+            exit 1
+          fi
+          echo "Supabase keep-alive OK"
